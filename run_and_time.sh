@@ -5,7 +5,7 @@ set -e
 # to use the script:
 #   run_and_time.sh <random seed 1-5> <num_gpus>
 
-SEED=${1:--1}
+SEED=${1:--1} # $SEED is $1 (the first argument passed)
 ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
 
 NUM_GPUS=${2:-1}
