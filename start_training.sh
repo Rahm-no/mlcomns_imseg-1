@@ -1,7 +1,7 @@
 #!/bin/bash
 
 num_gpus=${1:-4}
-workload_dir="/mlcommons_training/image_segmentation/pytorch"
+workload_dir="/dl-bench/ruoyudeng/mlcomns_imseg"
 
 if [[ ! -d "${workload_dir}/results" ]]
 then

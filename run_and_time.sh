@@ -9,7 +9,7 @@ SEED=${1:--1} # $SEED is $1 (the first argument passed) OR a int 1 if there is n
 ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
 
 NUM_GPUS=${2:-1}
-MAX_EPOCHS=50
+MAX_EPOCHS=5
 QUALITY_THRESHOLD="0.908"
 START_EVAL_AT=25
 EVALUATE_EVERY=2
@@ -46,8 +46,8 @@ mllog_event(key=constants.CACHE_CLEAR, value=True)"
     --seed ${SEED} \
     --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
     --save_ckpt_path ${SAVE_CKPT_PATH} \
-    --num_workers 4
-    # my args
+    --num_workers 0
+    # my args (need to change in the container, not in here)
     # --oversampling 0.1
 
 	# end timing
