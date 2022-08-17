@@ -46,7 +46,9 @@ mllog_event(key=constants.CACHE_CLEAR, value=True)"
     --seed ${SEED} \
     --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
     --save_ckpt_path ${SAVE_CKPT_PATH} \
-    --num_workers 0
+    --num_workers 4
+    # my args
+    # --oversampling 0.1
 
 	# end timing
 	end=$(date +%s)
