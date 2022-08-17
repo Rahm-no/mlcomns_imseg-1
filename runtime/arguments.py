@@ -8,6 +8,7 @@ PARSER.add_argument('--log_dir', dest='log_dir', type=str, default="/tmp")
 PARSER.add_argument('--save_ckpt_path', dest='save_ckpt_path', type=str, default="")
 PARSER.add_argument('--load_ckpt_path', dest='load_ckpt_path', type=str, default="")
 PARSER.add_argument('--loader', dest='loader', default="pytorch", type=str)
+# if the environment var does not exist, then set local_rank to 0, otherwise set it to $LOCAL_RANK
 PARSER.add_argument("--local_rank", default=os.environ.get("LOCAL_RANK", 0), type=int)
 
 PARSER.add_argument('--epochs', dest='epochs', type=int, default=1)
@@ -16,6 +17,12 @@ PARSER.add_argument('--ga_steps', dest='ga_steps', type=int, default=1)
 PARSER.add_argument('--warmup_steps', dest='warmup_steps', type=int, default=4)
 PARSER.add_argument('--batch_size', dest='batch_size', type=int, default=2)
 PARSER.add_argument('--layout', dest='layout', type=str, choices=['NCDHW'], default='NCDHW')
+# nargs stands for Number Of Arguments
+# 3: 3 values, can be any number you want
+# ?: a single value, which can be optional
+# *: a flexible number of values, which will be gathered into a list
+# +: like *, but requiring at least one value
+# argparse.REMAINDER: all the values that are remaining in the command line
 PARSER.add_argument('--input_shape', nargs='+', type=int, default=[128, 128, 128])
 PARSER.add_argument('--val_input_shape', nargs='+', type=int, default=[128, 128, 128])
 PARSER.add_argument('--seed', dest='seed', default=-1, type=int)
