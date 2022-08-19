@@ -23,12 +23,14 @@ DATASET_SIZE = 168
 
 
 def main():
+    # set up logger
     mllog.config(filename=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'unet3d.log'))
     mllog.config(filename=os.path.join("/results", 'unet3d.log'))
     mllogger = mllog.get_mllogger()
     mllogger.logger.propagate = False
     mllog_start(key=constants.INIT_START)
 
+    # get parameters from arguments
     flags = PARSER.parse_args()
     dllogger = get_dllogger(flags)
     local_rank = flags.local_rank
@@ -39,6 +41,7 @@ def main():
     mllog_event(key='world_size', value=world_size, sync=False)
     mllog_event(key='local_rank', value=local_rank, sync=False)
 
+    # set up seeds
     worker_seeds, shuffling_seeds = setup_seeds(flags.seed, flags.epochs, device)
     worker_seed = worker_seeds[local_rank]
     seed_everything(worker_seed)
@@ -48,6 +51,7 @@ def main():
         mlperf_submission_log()
         mlperf_run_param_log(flags)
 
+    # model initilization and callbacks set up
     callbacks = get_callbacks(flags, dllogger, local_rank, world_size)
     flags.seed = worker_seed
     model = Unet3D(1, 3, normalization=flags.normalization, activation=flags.activation)
@@ -57,6 +61,7 @@ def main():
     mllog_end(key=constants.INIT_STOP, sync=True)
     mllog_start(key=constants.RUN_START, sync=True)
 
+    # set up validation and training dataset dataloader
     train_dataloader, val_dataloader = get_data_loaders(flags, num_shards=world_size, global_rank=local_rank)
     mllog_event(key='len train_dataloader', value=len(train_dataloader), sync=False)
     mllog_event(key='len val_dataloader', value=len(val_dataloader), sync=False)
@@ -68,11 +73,14 @@ def main():
 
     mllog_event(key=constants.GLOBAL_BATCH_SIZE, value=flags.batch_size * world_size * flags.ga_steps, sync=False)
     mllog_event(key=constants.GRADIENT_ACCUMULATION_STEPS, value=flags.ga_steps)
+    
+    # set up loss function and score function
     loss_fn = DiceCELoss(to_onehot_y=True, use_softmax=True, layout=flags.layout,
                          include_background=flags.include_background)
     score_fn = DiceScore(to_onehot_y=True, use_argmax=True, layout=flags.layout,
                          include_background=flags.include_background)
 
+    # decide whether to train or evaluate based on arg given (deafult = train)
     if flags.exec_mode == 'train':
         train(flags, model, train_dataloader, val_dataloader, loss_fn, score_fn, 
               device=device, callbacks=callbacks, is_distributed=is_distributed)
