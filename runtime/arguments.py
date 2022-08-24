@@ -41,14 +41,14 @@ PARSER.add_argument('--lr_decay_factor', dest='lr_decay_factor', type=float, def
 PARSER.add_argument('--lamb_betas', nargs='+', type=int, default=[0.9, 0.999])
 PARSER.add_argument('--momentum', dest='momentum', type=float, default=0.9)
 PARSER.add_argument('--weight_decay', dest='weight_decay', type=float, default=0.0)
-PARSER.add_argument('--evaluate_every', '--eval_every', dest='evaluate_every', type=int, default=None)
-PARSER.add_argument('--start_eval_at', dest='start_eval_at', type=int, default=None)
+PARSER.add_argument('--evaluate_every', '--eval_every', dest='evaluate_every', type=int, default=0)
+PARSER.add_argument('--start_eval_at', dest='start_eval_at', type=int, default=0)
 PARSER.add_argument('--verbose', '-v', dest='verbose', action='store_true', default=False)
 PARSER.add_argument('--normalization', dest='normalization', type=str,
                     choices=['instancenorm', 'batchnorm'], default='instancenorm')
 PARSER.add_argument('--activation', dest='activation', type=str, choices=['relu', 'leaky_relu'], default='relu')
 
-PARSER.add_argument('--oversampling', dest='oversampling', type=float, default=0.4)
+PARSER.add_argument('--oversampling', dest='oversampling', type=float, default=1) # default 100% of data is used
 PARSER.add_argument('--overlap', dest='overlap', type=float, default=0.5)
 PARSER.add_argument('--include_background', dest='include_background', action='store_true', default=False)
 PARSER.add_argument('--cudnn_benchmark', dest='cudnn_benchmark', action='store_true', default=False)
