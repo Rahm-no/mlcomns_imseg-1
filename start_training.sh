@@ -10,6 +10,8 @@ workload_dir="/dl-bench/ruoyudeng/mlcomns_imseg"
 # sudo docker build -t unet3d:trace1 .
 
 # this is just running docker images, but we need to remount everything using `docker build` as an update to old image before we run it again
+
+# run image unet3d:trace1 with the trace1 tunned params
 docker run --ipc=host --name=training -it --rm --runtime=nvidia \
 	-v /data/kits19/data/:/raw_data \
 	-v ${data_path}:/data \
