@@ -19,14 +19,14 @@ SAVE_CKPT_PATH="/ckpts"
 ##### params to be changed: ######
 
 # data loading speed (depends on cpu resources)
-NUM_WORKERS=8 
+NUM_WORKERS=1 
 
 # evaluation frequency (I/O to disk)
-START_EVAL_AT=20 
+START_EVAL_AT=10 
 EVALUATE_EVERY=2
 
 # training time and warm up time
-MAX_EPOCHS=40
+MAX_EPOCHS=20
 LR_WARMUP_EPOCHS=5
 
 if [ -d ${DATASET_DIR} ]
