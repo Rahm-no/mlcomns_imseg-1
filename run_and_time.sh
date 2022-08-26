@@ -23,7 +23,7 @@ NUM_WORKERS=0 # can not plot correctly with NUM_WORKERS>0, must stay UNCHANGED!!
 
 # evaluation frequency (I/O to disk)
 START_EVAL_AT=15 
-EVALUATE_EVERY=1
+EVALUATE_EVERY=12
 
 # training time and warm up time
 MAX_EPOCHS=40
