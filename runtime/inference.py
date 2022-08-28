@@ -29,7 +29,7 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
     eval_loss = []
     scores = []
     with torch.no_grad():
-        for i, batch in enumerate(tqdm(loader, disable=(rank != 0) or not flags.verbose)):
+        for _, batch in enumerate(tqdm(loader, disable=(rank != 0) or not flags.verbose)):
             image, label = batch
 
             image, label = image.to(device), label.to(device)
