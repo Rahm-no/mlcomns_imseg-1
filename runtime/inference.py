@@ -10,7 +10,7 @@ from runtime.distributed_utils import reduce_tensor, get_world_size, get_rank
 from runtime.logging import mllog_event
 
 
-def evaluate(flags, model, loader, loss_fn, score_fn, device, logfile, epoch=0, is_distributed=False):
+def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distributed=False):
     rank = get_rank()
     world_size = get_world_size()
     model.to(device)
@@ -26,13 +26,11 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, logfile, epoch=0, 
 
     model.eval()
 
-    logfile.write(f"Starting Evaluation\n")
     eval_loss = []
     scores = []
     with torch.no_grad():
         for i, batch in enumerate(tqdm(loader, disable=(rank != 0) or not flags.verbose)):
-            image, label, casename = batch
-            logfile.write(f"{casename}\n")
+            image, label = batch
 
             image, label = image.to(device), label.to(device)
             if image.numel() == 0:
