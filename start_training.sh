@@ -15,11 +15,12 @@ then
     mkdir "${workload_dir}/ckpts"
 fi
 
-
+# create my own image to run parameter tunning
+# sudo docker build -t unet3d:tuning .
 docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
 	-v /data/kits19/data/:/raw_data \
 	-v ${data_path}:/data \
 	-v ${workload_dir}/results/${exp_name}/results:/results \
 	-v ${workload_dir}/ckpts/${exp_name}/ckpts:/ckpts \
-	unet3d:latest /bin/bash run_and_time.sh 1 $num_gpus
+	unet3d:tuning /bin/bash run_and_time.sh 1 $num_gpus
 
