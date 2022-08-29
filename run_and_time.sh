@@ -22,12 +22,12 @@ SAVE_CKPT_PATH="/ckpts"
 NUM_WORKERS=0 # can not plot correctly with NUM_WORKERS>0, must stay UNCHANGED!!
 
 # evaluation frequency (I/O to disk)
-START_EVAL_AT=15 
-EVALUATE_EVERY=8
+START_EVAL_AT=25 
+EVALUATE_EVERY=2
 
 # training time and warm up time
-MAX_EPOCHS=40
-LR_WARMUP_EPOCHS=5
+MAX_EPOCHS=50
+LR_WARMUP_EPOCHS=10
 
 if [ -d ${DATASET_DIR} ]
 then

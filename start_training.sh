@@ -18,6 +18,7 @@ fi
 # create my own image to run parameter tunning
 # sudo docker build -t unet3d:tuning .
 docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
+	--memory="256g" \
 	-v /data/kits19/data/:/raw_data \
 	-v ${data_path}:/data \
 	-v ${workload_dir}/results/${exp_name}/results:/results \
