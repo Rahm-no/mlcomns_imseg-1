@@ -14,7 +14,7 @@ then
 fi
 
 
-docker run --ipc=host --name=training -it --rm --runtime=nvidia \
+docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
 	-v /data/kits19/data/:/raw_data \
 	-v /data/kits19/preprocessed_data/:/data \
 	-v ${workload_dir}/results:/results \
