@@ -5,12 +5,18 @@ exp_name=$2
 data_path=$3
 workload_dir="/dl-bench/ruoyudeng/mlcomns_imseg"
 
+if [[ ! -d "${workload_dir}/results" ]]
+then
+    mkdir "${workload_dir}/results"
+fi
 
-# this is just running docker images, but we need to remount everything using `docker build` as an update to old image before we run it again
+if [[ ! -d "${workload_dir}/ckpts" ]]
+then
+    mkdir "${workload_dir}/ckpts"
+fi
 
-# sudo docker build -t unet3d:latest .
-# run image unet3d:trace1 with the trace1 tunned params
-docker run --ipc=host --name=training -it --rm --runtime=nvidia \
+
+docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
 	-v /data/kits19/data/:/raw_data \
 	-v ${data_path}:/data \
 	-v ${workload_dir}/results/${exp_name}/results:/results \
