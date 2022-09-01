@@ -4,7 +4,6 @@ set -e
 # runs benchmark and reports time to convergence
 # to use the script:
 #   run_and_time.sh <random seed 1-5> <num_gpus>
-
 SEED=${1:--1} # $SEED is $1 (the first argument passed) OR a int 1 if there is no first argument given
 ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
 
@@ -12,7 +11,7 @@ NUM_GPUS=${2:-1}
 QUALITY_THRESHOLD="0.908"
 LEARNING_RATE="0.8"
 DATASET_DIR="/data"
-BATCH_SIZE=2
+BATCH_SIZE=4
 GRADIENT_ACCUMULATION_STEPS=1
 SAVE_CKPT_PATH="/ckpts"
 
@@ -22,12 +21,16 @@ SAVE_CKPT_PATH="/ckpts"
 NUM_WORKERS=0 # can not plot correctly with NUM_WORKERS>0, must stay UNCHANGED!!
 
 # evaluation frequency (I/O to disk)
-START_EVAL_AT=25 
+START_EVAL_AT=10
 EVALUATE_EVERY=2
 
 # training time and warm up time
-MAX_EPOCHS=50
-LR_WARMUP_EPOCHS=10
+MAX_EPOCHS=20
+LR_WARMUP_EPOCHS=0
+
+DATASET_SIZE=$3
+# Prepare the datasets inside the container before training
+./prepare_datasets.sh /source_data/ /data/ $DATASET_SIZE
 
 if [ -d ${DATASET_DIR} ]
 then
