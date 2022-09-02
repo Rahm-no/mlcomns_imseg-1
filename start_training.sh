@@ -4,11 +4,12 @@ num_gpus=${1:-4}
 exp_name=$2
 data_path=$3
 dataset_size=$4
-workload_dir="/dl-bench/ruoyudeng/mlcomns_imseg"
+mem_size=$5
+workload_dir=$6
 
-if [ $# -lt 4 ]
+if [ $# -lt 6 ]
 	then
-		echo "Usage: $0 <num_gpus> <experiment_name> <data_path_500GB> <dataset_size>"
+		echo "Usage: $0 <num_gpus> <experiment_name> <data_path_500GB> <dataset_size> <memory_size> <workload_dir>"
 		exit 1
 fi
 
@@ -34,10 +35,10 @@ fi
 # run traces with 16GB dataset
 # sudo docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
 # 	-v /data/kits19/data/:/raw_data \
-# 	-v /raid/data/unet/original_dataset/original_dataset_500GB:/source_data \
+# 	-v /raid/data/unet/original_dataset/Original_dataset_500GB:/source_data \
 # 	-v /dl-bench/ruoyudeng/mlcomns_imseg/results:/results \
 # 	-v /dl-bench/ruoyudeng/mlcomns_imseg/ckpts:/ckpts \
-# 	unet3d:tuning /bin/bash run_and_time.sh 1 8 256
+# 	unet3d:tuning /bin/bash run_and_time.sh 1 8 256 -m 256g
 
 # DOCKER_CMD="docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
 # 	-v /data/kits19/data/:/raw_data \
@@ -47,9 +48,9 @@ fi
 # 	unet3d:tuning /bin/bash run_and_time.sh 1 $num_gpus $dataset_size"
 
 DOCKER_CMD="docker run --ipc=host --name=train_imseg"
-if [[ "${dataset_size}" != "16" ]]
+if [[ "${mem_size}" != "-1" ]]
 then
-	DOCKER_CMD="${DOCKER_CMD} -m 256g"
+	DOCKER_CMD="${DOCKER_CMD} -m ${mem_size}g"
 fi
 
 DOCKER_CMD="${DOCKER_CMD} -it --rm --runtime=nvidia \
@@ -58,6 +59,9 @@ DOCKER_CMD="${DOCKER_CMD} -it --rm --runtime=nvidia \
 	-v ${workload_dir}/results/${exp_name}/results:/results \
 	-v ${workload_dir}/ckpts/${exp_name}/ckpts:/ckpts \
 	unet3d:tuning /bin/bash run_and_time.sh 1 $num_gpus $dataset_size"
+
+
+# echo $DOCKER_CMD
 exec $DOCKER_CMD
 
 
