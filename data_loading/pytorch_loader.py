@@ -141,6 +141,7 @@ class PytTrain(Dataset):
         self.train_transforms = get_train_transforms()
         patch_size, oversampling = kwargs["patch_size"], kwargs["oversampling"]
         self.patch_size = patch_size
+        # patch_size is input shape [128,128,128]
         self.rand_crop = RandBalancedCrop(patch_size=patch_size, oversampling=oversampling)
 
     def __len__(self):
