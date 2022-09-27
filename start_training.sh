@@ -1,12 +1,15 @@
 #!/bin/bash
 
 num_gpus=${1:-4}
-exp_name=$2
-data_path=$3
-dataset_size=$4
-mem_size=$5
-workload_dir=$6
+container_name=$2
+exp_name=$3
 
+workload_dir=$4
+data_path=$5
+dataset_size=$6
+mem_size=$7
+
+# 8 exp_test /raid/data/unet/original_dataset/Original_dataset_500GB 200 256 /dl-bench/ruoyudeng/mlcomns_imseg
 if [ $# -lt 6 ]
 	then
 		echo "Usage: $0 <num_gpus> <experiment_name> <data_path_500GB> <dataset_size> <memory_size> <workload_dir>"
@@ -26,28 +29,7 @@ fi
 # create my own image to run parameter tunning
 # sudo docker build -t unet3d:tuning .
 
-# workload_dir="/dl-bench/ruoyudeng/mlcomns_imseg"
-# data_path="/data/kits19/preprocessed_data"
-# # data_path="/raid/data/unet/original_dataset/preprocessed_data_500GB"
-# num_gpus="8"
-# exp_name="8gpu_original_16GB"
-
-# run traces with 16GB dataset
-# sudo docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
-# 	-v /data/kits19/data/:/raw_data \
-# 	-v /raid/data/unet/original_dataset/Original_dataset_500GB:/source_data \
-# 	-v /dl-bench/ruoyudeng/mlcomns_imseg/results:/results \
-# 	-v /dl-bench/ruoyudeng/mlcomns_imseg/ckpts:/ckpts \
-# 	unet3d:tuning /bin/bash run_and_time.sh 1 8 256 -m 256g
-
-# DOCKER_CMD="docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
-# 	-v /data/kits19/data/:/raw_data \
-# 	-v ${data_path}:/source_data \
-# 	-v ${workload_dir}/results/${exp_name}/results:/results \
-# 	-v ${workload_dir}/ckpts/${exp_name}/ckpts:/ckpts \
-# 	unet3d:tuning /bin/bash run_and_time.sh 1 $num_gpus $dataset_size"
-
-DOCKER_CMD="docker run --ipc=host --name=train_imseg"
+DOCKER_CMD="docker run --ipc=host --name=${container_name}"
 if [[ "${mem_size}" != "-1" ]]
 then
 	DOCKER_CMD="${DOCKER_CMD} -m ${mem_size}g"
@@ -63,13 +45,3 @@ DOCKER_CMD="${DOCKER_CMD} -it --rm --runtime=nvidia \
 
 # echo $DOCKER_CMD
 exec $DOCKER_CMD
-
-
-# docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
-# 	-v /data/kits19/data/:/raw_data \
-# 	-v ${data_path}:/source_data \
-# 	-v ${workload_dir}/results/${exp_name}/results:/results \
-# 	-v ${workload_dir}/ckpts/${exp_name}/ckpts:/ckpts \
-# 	unet3d:tuning /bin/bash run_and_time.sh 1 $num_gpus $dataset_size
-
-# ./start_training.sh 8 8gpu_original_16GB_20220830123856 /raid/data/unet/original_dataset/Original_dataset_500GB 16
