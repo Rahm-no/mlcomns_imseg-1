@@ -132,19 +132,30 @@ class CheckpointCallback(BaseCallback):
         self._seed = seed
 
     def on_epoch_end(self, epoch, metrics, model, optimizer, *args, **kwargs):
+
+        # at the end of each epoch, update the best_model_state if necessary
+        # replace last_model_state and last_optimizer_state, but DID not store them as files
         try:
             current_state_dict = model.module.state_dict()
         except torch.nn.modules.module.ModuleAttributeError:
             current_state_dict = model.state_dict()
+
+        current_opt_state_dict = optimizer.state_dict()
         self._last_state = {'last_model_state_dict': current_state_dict,
-                            'last_optimizer_state_dict': optimizer.state_dict()}
+                            'last_optimizer_state_dict': current_opt_state_dict}
+
+        current_metric = metrics[self._main_metric]
+        filename = "ckpt_mean_dice_" + str(current_metric)
+        savepath = os.path.join(self._path, filename)
+        torch.save({**self._last_state}, savepath)
         if metrics[self._main_metric] > self._best_metric:
             self._best_metric = metrics[self._main_metric]
             self._best_state = {'best_model_state_dict': copy.deepcopy(current_state_dict),
-                                'best_optimizer_state_dict': copy.deepcopy(optimizer.state_dict()),
+                                'best_optimizer_state_dict': copy.deepcopy(current_opt_state_dict),
                                 **metrics}
 
     def on_fit_end(self, *args, **kwargs):
+        # store the final best mean_dice as a filename
         filename = "ckpt_mean_dice_" + str(self._best_metric)
         savepath = os.path.join(self._path, filename)
         torch.save({**self._last_state, **self._best_state, "seed": self._seed}, savepath)
