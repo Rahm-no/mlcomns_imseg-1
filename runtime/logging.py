@@ -14,6 +14,7 @@ mllogger = mllog.get_mllogger()
 
 def get_dllogger(params):
     backends = []
+    # Only the main process will log
     if is_main_process():
         backends += [StdOutBackend(Verbosity.VERBOSE)]
         if params.log_dir:
