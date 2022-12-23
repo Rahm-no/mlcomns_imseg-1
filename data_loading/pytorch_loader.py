@@ -4,7 +4,8 @@ import scipy.ndimage
 from torch.utils.data import Dataset
 from torchvision import transforms
 import os
-from runtime.logging import mllog_event
+from time import perf_counter_ns
+from runtime.logging import mllog_event, mllog_end
 
 def get_train_transforms():
     rand_flip = RandFlip()
@@ -147,12 +148,20 @@ class PytTrain(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
+
+        t0 = perf_counter_ns()
         data = {"image": np.load(self.images[idx]), "label": np.load(self.labels[idx])}
+        mllog_end(key="sample_load", value={"start": t0, "duration": perf_counter_ns() - t0})
+
+        t0 = perf_counter_ns()
         data = self.rand_crop(data)
         data = self.train_transforms(data)
+        mllog_end(key="sample_preproc", value={"start": t0, "duration": perf_counter_ns() - t0})
+        
         return data["image"], data["label"]
 
-
+# The validation dataset does not do the same preprocessing as the training one 
+# simply returning the raw image. We would thus expect it to yield images faster
 class PytVal(Dataset):
     def __init__(self, images, labels):
         self.images, self.labels = images, labels

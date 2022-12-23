@@ -13,7 +13,7 @@ BATCH_SIZE=${3:-2}
 MAX_EPOCHS=10
 QUALITY_THRESHOLD="0.908"
 START_EVAL_AT=5
-EVALUATE_EVERY=1
+EVALUATE_EVERY=2
 LEARNING_RATE="0.8"
 LR_WARMUP_EPOCHS=0
 DATASET_DIR="/data"
@@ -32,15 +32,6 @@ then
 from mlperf_logging.mllog import constants
 from runtime.logging import mllog_event
 mllog_event(key=constants.CACHE_CLEAR, value=True)"
-
-# export DARSHAN_LOGPATH=/results
-# export DARSHAN_MMAP_LOGPATH=/results
-# export DARSHAN_ENABLE_NONMPI=1
-# # export DXT_ENABLE_IO_TRACE=1
-# export DARSHAN_MOD_ENABLE=POSIX,DXT_POSIX
-# export DARSHAN_DUMP_CONFIG=1
-# export DARSHAN_DISABLE_SHARED_REDUCTION=1
-#env LD_PRELOAD=/usr/local/lib/libdarshan.so 
 
 python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
     --data_dir ${DATASET_DIR} \
