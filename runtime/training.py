@@ -60,7 +60,7 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
     for callback in callbacks:
         callback.on_fit_start()
     for epoch in range(1, flags.epochs + 1):
-        cumulative_loss = []
+        # cumulative_loss = []
 
         if epoch <= flags.lr_warmup_epochs and flags.lr_warmup_epochs > 0:
             lr_warmup(optimizer, flags.init_learning_rate, flags.learning_rate, epoch, flags.lr_warmup_epochs)
@@ -123,13 +123,14 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
                 optimizer.zero_grad()
             mllog_end(key="model_optim_step", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             
-            t0 = perf_counter_ns()
-            # Calls an explicit all_reduce on the batch's loss_tensor
-            # detach returns a cpy of the tensor, detached from graph
-            # cpu moves it from GPU to CPU
-            loss_value = reduce_tensor(loss_value, world_size).detach().cpu().numpy()
-            cumulative_loss.append(loss_value)
-            mllog_end(key="cum_loss_fn_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
+            # REMOVING THIS LAST STEP
+            # t0 = perf_counter_ns()
+            # # Calls an explicit all_reduce on the batch's loss_tensor
+            # # detach returns a cpy of the tensor, detached from graph
+            # # cpu moves it from GPU to CPU
+            # loss_value = reduce_tensor(loss_value, world_size).detach().cpu().numpy()
+            # cumulative_loss.append(loss_value)
+            # mllog_end(key="cum_loss_fn_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
 
             mllog_end(key="step_end", value={"start": t_iter, "duration": perf_counter_ns() - t_iter}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             # Restart counters for next iteration
@@ -148,7 +149,7 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
             mllog_start(key=CONSTANTS.EVAL_START, value=epoch, metadata={CONSTANTS.EPOCH_NUM: epoch}, sync=False)
 
             eval_metrics = evaluate(flags, model, val_loader, loss_fn, score_fn, device, epoch)
-            eval_metrics["train_loss"] = sum(cumulative_loss) / len(cumulative_loss)
+            # eval_metrics["train_loss"] = sum(cumulative_loss) / len(cumulative_loss)
 
             mllog_event(key=CONSTANTS.EVAL_ACCURACY, 
                         value=eval_metrics["mean_dice"], 
