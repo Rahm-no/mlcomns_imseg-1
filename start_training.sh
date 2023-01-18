@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR=$( dirname -- "$( readlink -f -- "$0"; )" )
-mkdir -p ${SCRIPT_DIR}/results
+mkdir -p ${SCRIPT_DIR}/output
 mkdir -p ${SCRIPT_DIR}/ckpts
 
 NUM_GPUS=${1:-4}
