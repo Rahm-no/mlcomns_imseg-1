@@ -1,22 +1,17 @@
 #!/bin/bash
 
-num_gpus=${1:-4}
-workload_dir="/mlcommons_training/image_segmentation/pytorch"
+SCRIPT_DIR=$( dirname -- "$( readlink -f -- "$0"; )" )
+mkdir -p ${SCRIPT_DIR}/results
+mkdir -p ${SCRIPT_DIR}/ckpts
 
-if [[ ! -d "${workload_dir}/results" ]]
-then
-    mkdir "${workload_dir}/results"
-fi
-
-if [[ ! -d "${workload_dir}/ckpts" ]]
-then
-    mkdir "${workload_dir}/ckpts"
-fi
+NUM_GPUS=${1:-4}
+CONTAINER_NAME=${2:train_imseg}
+BATCH_SIZE=${3:-2}
 
 
-docker run --ipc=host --name=train_imseg -it --rm --runtime=nvidia \
-	-v /data/kits19/data/:/raw_data \
-	-v /data/kits19/preprocessed_data/:/data \
-	-v ${workload_dir}/results:/results \
-	-v ${workload_dir}/ckpts:/ckpts \
-	unet3d:latest /bin/bash run_and_time.sh 1 $num_gpus
+docker run --ipc=host --name=$CONTAINER_NAME -it --rm --runtime=nvidia \
+	-v /raid/data/imseg/raw-data/kits19/data/:/raw_data \
+	-v /raid/data/imseg/29gb-npy/:/data \
+	-v ${SCRIPT_DIR}/output:/results \
+	-v ${SCRIPT_DIR}/ckpts:/ckpts \
+	unet3d:loic /bin/bash run_and_time.sh 1 $NUM_GPUS $BATCH_SIZE
