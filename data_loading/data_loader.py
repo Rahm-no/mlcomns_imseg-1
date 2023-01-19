@@ -38,8 +38,8 @@ def get_data_split(path: str, num_shards: int, shard_id: int):
     with open("evaluation_cases.txt", "r") as f:
         val_cases_list = f.readlines()
     val_cases_list = [case.rstrip("\n") for case in val_cases_list]
-    imgs = load_data(path, "*_x.npy")
-    lbls = load_data(path, "*_y.npy")
+    imgs = load_data(path, "*_x.np*")
+    lbls = load_data(path, "*_y.np*")
     assert len(imgs) == len(lbls), f"Found {len(imgs)} volumes but {len(lbls)} corresponding masks"
     imgs_train, lbls_train, imgs_val, lbls_val = [], [], [], []
     for (case_img, case_lbl) in zip(imgs, lbls):

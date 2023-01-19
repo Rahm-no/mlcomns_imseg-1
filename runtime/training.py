@@ -79,6 +79,8 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
         for iteration, batch in enumerate(tqdm(train_loader, disable=(rank != 0) or not flags.verbose)):
             image, label = batch
             mllog_end(key="load_batch_mem", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
+
+            continue
             
             t0 = perf_counter_ns()
             image, label = image.to(device), label.to(device)
@@ -147,6 +149,8 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
             next_eval_at += flags.evaluate_every
             del output
             mllog_start(key=CONSTANTS.EVAL_START, value=epoch, metadata={CONSTANTS.EPOCH_NUM: epoch}, sync=False)
+
+            continue
 
             eval_metrics = evaluate(flags, model, val_loader, loss_fn, score_fn, device, epoch)
             # eval_metrics["train_loss"] = sum(cumulative_loss) / len(cumulative_loss)

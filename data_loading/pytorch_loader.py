@@ -149,6 +149,7 @@ class PytTrain(Dataset):
 
     def __getitem__(self, idx):
         t0 = perf_counter_ns()
+        print(self.images[idx], self.labels[idx])
         data = {"image": np.load(self.images[idx]), "label": np.load(self.labels[idx])}
         mllog_end(key="sample_load", value={"start": t0, "duration": perf_counter_ns() - t0})
 
