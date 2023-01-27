@@ -150,4 +150,5 @@ class CheckpointCallback(BaseCallback):
         filename = "ckpt_mean_dice_" + str(self._best_metric)
         savepath = os.path.join(self._path, filename)
         torch.save({**self._last_state, **self._best_state, "seed": self._seed}, savepath)
+        time.sleep(5)
         mllog_end(key="checkpoint_stop")

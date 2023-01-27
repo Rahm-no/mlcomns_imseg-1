@@ -11,7 +11,7 @@ from runtime.distributed_utils import reduce_tensor, get_world_size, get_rank
 from runtime.logging import mllog_event, mllog_end, CONSTANTS
 
 
-def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distributed=False):
+def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distributed=False, logfile=None):
     rank = get_rank()
     world_size = get_world_size()
     model.to(device)
@@ -34,6 +34,11 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
         t_iter = t0 = perf_counter_ns()
         for _, batch in enumerate(tqdm(loader, disable=(rank != 0) or not flags.verbose)):
             image, label = batch
+            # image, label, cases = batch
+            # if logfile is not None:
+            #     logfile.write('\n'.join(cases))
+            #     logfile.write('\n')
+
             mllog_end(key="eval_load_batch_mem", value={"start": t0, "duration": perf_counter_ns() - t0, "image_shape": image.shape}, metadata = {"eval_epoch_num": epoch})
             
             t0 = perf_counter_ns()

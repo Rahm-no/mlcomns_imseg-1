@@ -22,3 +22,4 @@ docker run --ipc=host --name=$CONTAINER_NAME -it --rm --runtime=nvidia $DOCKER_M
 	-v ${SCRIPT_DIR}/output:/results \
 	-v ${SCRIPT_DIR}/ckpts:/ckpts \
 	unet3d:loic /bin/bash run_and_time.sh 1 $NUM_GPUS $BATCH_SIZE
+	

@@ -2,13 +2,17 @@
 
 SCRIPT_DIR=$( dirname -- "$( readlink -f -- "$0"; )" )
 mkdir -p ${SCRIPT_DIR}/output
+# mkdir -p /raid/data/imseg/run_output
 mkdir -p ${SCRIPT_DIR}/ckpts
 
 NUM_GPUS=${1:-4}
 CONTAINER_NAME=${2:train_imseg}
 BATCH_SIZE=${3:-2}
-DOCKER_MEMORY=${4:-""}
+DOCKER_IMAGE=${4:-"unet3d:loic"}
+NUM_WORKERS=${5:-1}
+SKIP_STEP_7=${6:-""}
 
+DOCKER_MEMORY=
 DOCKER_MEMORY_PARAM=
 
 if [ ! -z "$DOCKER_MEMORY" ]
@@ -21,4 +25,5 @@ docker run --ipc=host --name=$CONTAINER_NAME -it --rm --runtime=nvidia $DOCKER_M
 	-v /raid/data/imseg/29gb-npy/:/data \
 	-v ${SCRIPT_DIR}/output:/results \
 	-v ${SCRIPT_DIR}/ckpts:/ckpts \
-	unet3d:loic /bin/bash run_and_time.sh 1 $NUM_GPUS $BATCH_SIZE
+	$DOCKER_IMAGE /bin/bash run_and_time.sh 1 $NUM_GPUS $BATCH_SIZE $NUM_WORKERS $SKIP_STEP_7
+	# $DOCKER_IMAGE /bin/bash

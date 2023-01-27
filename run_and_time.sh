@@ -5,15 +5,21 @@ set -e
 # to use the script:
 #   run_and_time.sh <random seed 1-5> <num_gpus>
 
-SEED=${1:--1}
-ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
-
+SEED=${1:--1} 
 NUM_GPUS=${2:-1}
 BATCH_SIZE=${3:-2}
-MAX_EPOCHS=10
+NUM_WORKERS=${4:-1}
+SKIP_STEP_7=${5:-""}
+
+if [ ! -z $SKIP_STEP_7 ]
+then
+  SKIP_STEP_7="--skip_step_7"
+fi
+
+MAX_EPOCHS=20
 QUALITY_THRESHOLD="0.908"
-START_EVAL_AT=5
-EVALUATE_EVERY=2
+START_EVAL_AT=10
+EVALUATE_EVERY=5
 LEARNING_RATE="0.8"
 LR_WARMUP_EPOCHS=0
 DATASET_DIR="/data"
@@ -33,6 +39,8 @@ from mlperf_logging.mllog import constants
 from runtime.logging import mllog_event
 mllog_event(key=constants.CACHE_CLEAR, value=True)"
 
+ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
+
 python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
     --data_dir ${DATASET_DIR} \
     --epochs ${MAX_EPOCHS} \
@@ -46,7 +54,8 @@ python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
     --seed ${SEED} \
     --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
     --save_ckpt_path ${SAVE_CKPT_PATH} \
-    --num_workers 0
+    --num_workers ${NUM_WORKERS} \
+    $SKIP_STEP_7
 
 	# end timing
 	end=$(date +%s)

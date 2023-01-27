@@ -22,6 +22,8 @@ PARSER.add_argument('--seed', dest='seed', default=-1, type=int)
 PARSER.add_argument('--num_workers', dest='num_workers', type=int, default=8)
 PARSER.add_argument('--exec_mode', dest='exec_mode', choices=['train', 'evaluate'], default='train')
 
+PARSER.add_argument('--skip_step_7', dest='skip_step_7', action='store_true', default=False)
+
 PARSER.add_argument('--benchmark', dest='benchmark', action='store_true', default=False)
 PARSER.add_argument('--amp', dest='amp', action='store_true', default=False)
 PARSER.add_argument('--optimizer', dest='optimizer', default="sgd", choices=["sgd", "adam", "lamb"], type=str)
