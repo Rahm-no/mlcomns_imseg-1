@@ -5,6 +5,10 @@ import torch
 import torch.distributed as dist
 import numpy as np
 
+import horovod.torch as hvd
+
+# Initialize Horovod
+hvd.init()
 
 def get_device(local_rank):
     if torch.cuda.is_available():
@@ -88,7 +92,8 @@ def setup_seeds(master_seed, epochs, device):
 
 
 def get_world_size():
-    return int(os.environ.get('WORLD_SIZE', 1))
+    return hvd.size()
+    # return int(os.environ.get('WORLD_SIZE', 1))
 
 
 def reduce_tensor(tensor, num_gpus):
@@ -105,6 +110,7 @@ def reduce_tensor(tensor, num_gpus):
 
 def init_distributed():
     world_size = int(os.environ.get('WORLD_SIZE', 1))
+    # world_size = hvd.size()
     distributed = world_size > 1
     if distributed:
         backend = 'nccl' if torch.cuda.is_available() else 'gloo'
@@ -121,11 +127,12 @@ def get_rank():
     """
     Gets distributed rank or returns zero if distributed is not initialized.
     """
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
-        rank = torch.distributed.get_rank()
-    else:
-        rank = 0
-    return rank
+    # if torch.distributed.is_available() and torch.distributed.is_initialized():
+    #     rank = torch.distributed.get_rank()
+    # else:
+    #     rank = 0
+    # return rank
+    return hvd.local_rank()
 
 
 def is_main_process():

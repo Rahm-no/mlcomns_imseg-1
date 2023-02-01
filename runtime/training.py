@@ -13,6 +13,8 @@ from runtime.logging import mllog_event, mllog_start, mllog_end, CONSTANTS
 
 from numba import cuda
 
+import horovod.torch as hvd
+
 def get_optimizer(params, flags):
     if flags.optimizer == "adam":
         optim = Adam(params, lr=flags.learning_rate, weight_decay=flags.weight_decay)
@@ -25,6 +27,7 @@ def get_optimizer(params, flags):
                                           weight_decay=flags.weight_decay)
     else:
         raise ValueError("Optimizer {} unknown.".format(flags.optimizer))
+
     return optim
 
 
@@ -58,6 +61,13 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
     torch.backends.cudnn.deterministic = flags.cudnn_deterministic
 
     optimizer = get_optimizer(model.parameters(), flags)
+        # Add Horovod Distributed Optimizer
+    optimizer = hvd.DistributedOptimizer(optimizer, named_parameters=model.named_parameters())
+
+    # Broadcast parameters from rank 0 to all other processes.
+    hvd.broadcast_parameters(model.state_dict(), root_rank=0)
+    hvd.broadcast_optimizer_state(optimizer, root_rank=0)
+
     if flags.lr_decay_epochs:
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                          milestones=flags.lr_decay_epochs,

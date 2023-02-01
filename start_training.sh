@@ -7,8 +7,8 @@ mkdir -p ${SCRIPT_DIR}/ckpts
 
 NUM_GPUS=${1:-4}
 CONTAINER_NAME=${2:train_imseg}
-BATCH_SIZE=${3:-2}
-DOCKER_IMAGE=${4:-"unet3d:loic"}
+BATCH_SIZE=${3:-1}
+DOCKER_IMAGE=${4:-"unet3d:no-step7"}
 NUM_WORKERS=${5:-1}
 SKIP_STEP_7=${6:-""}
 
@@ -20,7 +20,7 @@ then
 	DOCKER_MEMORY_PARAM="-m ${DOCKER_MEMORY}g"
 fi
 
-docker run --ipc=host --name=$CONTAINER_NAME -it --rm --runtime=nvidia $DOCKER_MEMORY_PARAM \
+docker run --ipc=host --shm-size=1024m --name=$CONTAINER_NAME -it --rm --runtime=nvidia $DOCKER_MEMORY_PARAM \
 	-v /raid/data/imseg/raw-data/kits19/data/:/raw_data \
 	-v /raid/data/imseg/29gb-npy/:/data \
 	-v ${SCRIPT_DIR}/output:/results \

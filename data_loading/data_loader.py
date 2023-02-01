@@ -9,6 +9,7 @@ from torch.utils.data.distributed import DistributedSampler
 from data_loading.pytorch_loader import PytVal, PytTrain
 from runtime.logging import mllog_event
 
+import horovod.torch as hvd
 
 def list_files_with_pattern(path, files_pattern):
     data = sorted(glob.glob(os.path.join(path, files_pattern)))
@@ -89,7 +90,7 @@ def get_data_loaders(flags, num_shards, global_rank):
     else:
         raise ValueError(f"Loader {flags.loader} unknown. Valid loaders are: synthetic, pytorch")
 
-    train_sampler = DistributedSampler(train_dataset, seed=flags.seed, drop_last=True) if num_shards > 1 else None
+    train_sampler = DistributedSampler(train_dataset, num_replicas=hvd.size(), rank=hvd.rank(), seed=flags.seed, drop_last=True) if num_shards > 1 else None
     val_sampler = None
 
     train_dataloader = DataLoader(train_dataset,

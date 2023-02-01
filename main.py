@@ -20,6 +20,14 @@ from runtime.callbacks import get_callbacks
 
 DATASET_SIZE = 168
 
+import horovod.torch as hvd
+
+# Initialize Horovod
+hvd.init()
+
+# Pin GPU to be used to process local rank (one GPU per process)
+torch.cuda.set_device(hvd.local_rank())
+
 
 def main():
     mllog.config(filename=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'unet3d.log'))
@@ -33,6 +41,7 @@ def main():
     local_rank = flags.local_rank
     device = get_device(local_rank)
     is_distributed = init_distributed()
+    # is_distributed = True
     world_size = get_world_size()
     local_rank = get_rank()
 

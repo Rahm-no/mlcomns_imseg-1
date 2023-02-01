@@ -39,9 +39,9 @@ from mlperf_logging.mllog import constants
 from runtime.logging import mllog_event
 mllog_event(key=constants.CACHE_CLEAR, value=True)"
 
-ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
+# ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
 
-python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
+horovodrun -np ${NUM_GPUS} python main.py \
     --data_dir ${DATASET_DIR} \
     --epochs ${MAX_EPOCHS} \
     --evaluate_every ${EVALUATE_EVERY} \
