@@ -77,34 +77,37 @@ class SyntheticDataset(Dataset):
 
 
 def get_data_loaders(flags, num_shards, global_rank):
-    if flags.loader == "synthetic":
-        train_dataset = SyntheticDataset(scalar=True, shape=flags.input_shape, layout=flags.layout)
-        val_dataset = SyntheticDataset(scalar=True, shape=flags.val_input_shape, layout=flags.layout)
+    # if flags.loader == "synthetic":
+    #     train_dataset = SyntheticDataset(scalar=True, shape=flags.input_shape, layout=flags.layout)
+    #     val_dataset = SyntheticDataset(scalar=True, shape=flags.val_input_shape, layout=flags.layout)
 
-    elif flags.loader == "pytorch":
-        x_train, x_val, y_train, y_val = get_data_split(flags.data_dir, num_shards, shard_id=global_rank)
-        train_data_kwargs = {"patch_size": flags.input_shape, "oversampling": flags.oversampling, "seed": flags.seed}
-        train_dataset = PytTrain(x_train, y_train, **train_data_kwargs)
-        val_dataset = PytVal(x_val, y_val)
-    else:
-        raise ValueError(f"Loader {flags.loader} unknown. Valid loaders are: synthetic, pytorch")
+    # elif flags.loader == "pytorch":
+    #     x_train, x_val, y_train, y_val = get_data_split(flags.data_dir, num_shards, shard_id=global_rank)
+    #     train_data_kwargs = {"patch_size": flags.input_shape, "oversampling": flags.oversampling, "seed": flags.seed}
+    #     train_dataset = PytTrain(x_train, y_train, **train_data_kwargs)
+    #     val_dataset = PytVal(x_val, y_val)
+    # else:
+    #     raise ValueError(f"Loader {flags.loader} unknown. Valid loaders are: synthetic, pytorch")
 
-    train_sampler = DistributedSampler(train_dataset, seed=flags.seed, drop_last=True) if num_shards > 1 else None
-    val_sampler = None
+    # x_train, x_val, y_train, y_val = get_data_split(flags.data_dir, num_shards, shard_id=global_rank)
+    # train_data_kwargs = {"patch_size": flags.input_shape, "oversampling": flags.oversampling, "seed": flags.seed}
 
+    x_train = list(range(100))
+    train_dataset = PytTrain(x_train)
+    
+    seed = flags.seed
+
+    train_sampler = DistributedSampler(train_dataset, seed=1, drop_last=True) if num_shards > 1 else None
+    print(f'seed: {seed}')
+    print(f'Train sampler: {train_sampler}')
+
+    # Sampler option is mutually exclusive with shuffle
     train_dataloader = DataLoader(train_dataset,
-                                  batch_size=flags.batch_size,
-                                  shuffle=not flags.benchmark and train_sampler is None,
+                                  batch_size=1,
+                                  shuffle=False,
                                   sampler=train_sampler,
-                                  num_workers=flags.num_workers,
+                                  num_workers=1,
                                   pin_memory=True,
                                   drop_last=True)
-    val_dataloader = DataLoader(val_dataset,
-                                batch_size=1,
-                                shuffle=not flags.benchmark and val_sampler is None,
-                                sampler=val_sampler,
-                                num_workers=flags.num_workers,
-                                pin_memory=True,
-                                drop_last=False)
 
-    return train_dataloader, val_dataloader
+    return train_dataloader

@@ -54,38 +54,38 @@ def main():
     flags.seed = worker_seed
     model = Unet3D(1, 3, normalization=flags.normalization, activation=flags.activation)
 
-    mllog_end(key=constants.INIT_STOP, sync=True)
-    mllog_start(key=constants.RUN_START, sync=True)
+    # mllog_end(key=constants.INIT_STOP, sync=True)
+    # mllog_start(key=constants.RUN_START, sync=True)
 
-    train_dataloader, val_dataloader = get_data_loaders(flags, num_shards=world_size, global_rank=local_rank)
+    train_dataloader = get_data_loaders(flags, num_shards=world_size, global_rank=local_rank)
+
     mllog_event(key='len train_dataloader', value=len(train_dataloader), sync=False)
-    mllog_event(key='len val_dataloader', value=len(val_dataloader), sync=False)
 
-    samples_per_epoch = world_size * len(train_dataloader) * flags.batch_size
-    mllog_event(key='samples_per_epoch', value=samples_per_epoch, sync=False)
-    flags.evaluate_every = flags.evaluate_every or ceil(20*DATASET_SIZE/samples_per_epoch)
-    flags.start_eval_at = flags.start_eval_at or ceil(1000*DATASET_SIZE/samples_per_epoch)
+    # samples_per_epoch = world_size * len(train_dataloader) * flags.batch_size
+    # mllog_event(key='samples_per_epoch', value=samples_per_epoch, sync=False)
+    # flags.evaluate_every = flags.evaluate_every or ceil(20*DATASET_SIZE/samples_per_epoch)
+    # flags.start_eval_at = flags.start_eval_at or ceil(1000*DATASET_SIZE/samples_per_epoch)
 
-    mllog_event(key=constants.GLOBAL_BATCH_SIZE, value=flags.batch_size * world_size * flags.ga_steps, sync=False)
-    mllog_event(key=constants.GRADIENT_ACCUMULATION_STEPS, value=flags.ga_steps)
+    # mllog_event(key=constants.GLOBAL_BATCH_SIZE, value=flags.batch_size * world_size * flags.ga_steps, sync=False)
+    # mllog_event(key=constants.GRADIENT_ACCUMULATION_STEPS, value=flags.ga_steps)
     loss_fn = DiceCELoss(to_onehot_y=True, use_softmax=True, layout=flags.layout,
                          include_background=flags.include_background)
     score_fn = DiceScore(to_onehot_y=True, use_argmax=True, layout=flags.layout,
                          include_background=flags.include_background)
 
     if flags.exec_mode == 'train':
-        train(flags, model, train_dataloader, val_dataloader, loss_fn, score_fn, 
+        train(flags, model, train_dataloader, None, loss_fn, score_fn, 
               device=device, callbacks=callbacks, is_distributed=is_distributed, skip_step_7=flags.skip_step_7)
 
-    elif flags.exec_mode == 'evaluate':
-        eval_metrics = evaluate(flags, model, val_dataloader, loss_fn, score_fn,
-                                device=device, is_distributed=is_distributed)
-        if local_rank == 0:
-            for key in eval_metrics.keys():
-                print(key, eval_metrics[key])
-    else:
-        print("Invalid exec_mode.")
-        pass
+    # elif flags.exec_mode == 'evaluate':
+    #     eval_metrics = evaluate(flags, model, val_dataloader, loss_fn, score_fn,
+    #                             device=device, is_distributed=is_distributed)
+    #     if local_rank == 0:
+    #         for key in eval_metrics.keys():
+    #             print(key, eval_metrics[key])
+    # else:
+    #     print("Invalid exec_mode.")
+    #     pass
 
     torch.distributed.destroy_process_group()
 

@@ -77,9 +77,13 @@ def setup_seeds(master_seed, epochs, device):
 
     # generate worker seeds, one seed for every distributed worker
     worker_seeds = generate_seeds(seeding_rng, get_world_size())
+    print(worker_seeds)
 
     # generate seeds for data shuffling, one seed for every epoch
     shuffling_seeds = generate_seeds(seeding_rng, epochs)
+    print(shuffling_seeds)
+
+    exit()
 
     # broadcast seeds from rank=0 to other workers
     worker_seeds = broadcast_seeds(worker_seeds, device)

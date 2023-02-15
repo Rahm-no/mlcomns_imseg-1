@@ -137,28 +137,25 @@ class GaussianNoise:
 
 
 class PytTrain(Dataset):
-    def __init__(self, images, labels, **kwargs):
-        self.images, self.labels = images, labels
-        self.train_transforms = get_train_transforms()
-        patch_size, oversampling = kwargs["patch_size"], kwargs["oversampling"]
-        self.patch_size = patch_size
-        self.rand_crop = RandBalancedCrop(patch_size=patch_size, oversampling=oversampling)
+    def __init__(self, images, **kwargs):
+        self.images = images
+        # self.train_transforms = get_train_transforms()
+        # patch_size, oversampling = kwargs["patch_size"], kwargs["oversampling"]
+        # self.patch_size = patch_size
+        # self.rand_crop = RandBalancedCrop(patch_size=patch_size, oversampling=oversampling)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, idx):
-        t0 = perf_counter_ns()
         # print(self.images[idx], self.labels[idx])
-        data = {"image": np.load(self.images[idx]), "label": np.load(self.labels[idx])}
-        mllog_end(key="sample_load", value={"start": t0, "duration": perf_counter_ns() - t0})
+        # data = {"image": np.load(self.images[idx]), "label": np.load(self.labels[idx])}
 
-        t0 = perf_counter_ns()
-        data = self.rand_crop(data)
-        data = self.train_transforms(data)
-        mllog_end(key="sample_preproc", value={"start": t0, "duration": perf_counter_ns() - t0})
+        # data = self.rand_crop(data)
+        # data = self.train_transforms(data)
         
-        return data["image"], data["label"]
+        # return data["image"], data["label"], idx
+        return idx
         # return data["image"], data["label"], str(self.images[idx])
 
 # The validation dataset does not do the same preprocessing as the training one 
