@@ -10,9 +10,9 @@ mkdir -p /raid/data/imseg/run_output
 NUM_GPUS=${1:-8}
 CONTAINER_NAME=${2:train_imseg} 
 LOGGING_DIR=${3:-"$SCRIPT_DIR/output"}
-BATCH_SIZE=${4:-4}
-DOCKER_IMAGE=${5:-"unet3d:loic"}
-NUM_WORKERS=${6:-8}
+DOCKER_IMAGE=${4:-"unet3d:loic"}
+BATCH_SIZE=${5:-4}
+NUM_WORKERS=${6:-1}
 NUM_EPOCHS=${7:-50}
 
 DOCKER_MEMORY=
