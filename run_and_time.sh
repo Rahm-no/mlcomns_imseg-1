@@ -9,14 +9,9 @@ SEED=${1:--1}
 NUM_GPUS=${2:-1}
 BATCH_SIZE=${3:-2}
 NUM_WORKERS=${4:-1}
-SKIP_STEP_7=${5:-""}
+NUM_EPOCHS=${5:-50}
 
-if [ ! -z $SKIP_STEP_7 ]
-then
-  SKIP_STEP_7="--skip_step_7"
-fi
 
-MAX_EPOCHS=50
 QUALITY_THRESHOLD="0.908"
 START_EVAL_AT=25
 EVALUATE_EVERY=25
@@ -43,7 +38,7 @@ ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.d
 
 python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
     --data_dir ${DATASET_DIR} \
-    --epochs ${MAX_EPOCHS} \
+    --epochs ${NUM_EPOCHS} \
     --evaluate_every ${EVALUATE_EVERY} \
     --start_eval_at ${START_EVAL_AT} \
     --quality_threshold ${QUALITY_THRESHOLD} \
@@ -54,8 +49,7 @@ python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
     --seed ${SEED} \
     --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
     --save_ckpt_path ${SAVE_CKPT_PATH} \
-    --num_workers ${NUM_WORKERS} \
-    $SKIP_STEP_7
+    --num_workers ${NUM_WORKERS}
 
 	# end timing
 	end=$(date +%s)

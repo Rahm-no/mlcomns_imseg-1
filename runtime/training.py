@@ -9,9 +9,8 @@ from torch.cuda.amp import autocast, GradScaler
 
 from runtime.distributed_utils import get_rank, reduce_tensor, get_world_size
 from runtime.inference import evaluate
-from runtime.logging import mllog_event, mllog_start, mllog_end, CONSTANTS
+from runtime.logging import mllog_event, mllog_start, mllog_end, CONSTANTS, all_workers_print
 
-from numba import cuda
 
 def get_optimizer(params, flags):
     if flags.optimizer == "adam":
@@ -80,6 +79,8 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
 
     eval_num = 0
 
+    cases_seen = set()
+
     for epoch in range(1, flags.epochs + 1):
         # logfile.write(f"Starting epoch {epoch}\n")
         cumulative_loss = []
@@ -100,9 +101,14 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
         # start timers
         t_iter = t0 = perf_counter_ns()
         for iteration, batch in enumerate(tqdm(train_loader, disable=(rank != 0) or not flags.verbose)):
-            image, label = batch
-            # logfile.write('\n'.join(cases))
-            # logfile.write('\n')
+            image, label, indices = batch
+
+            for idx in indices:
+                cases_seen.add(idx)
+
+            if len(cases_seen) == 168:
+                mllog_end(f"ALL CASES SEEN")
+
 
             mllog_end(key="load_batch_mem", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
 

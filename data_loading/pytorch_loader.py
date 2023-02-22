@@ -148,17 +148,11 @@ class PytTrain(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        t0 = perf_counter_ns()
-        # print(self.images[idx], self.labels[idx])
         data = {"image": np.load(self.images[idx]), "label": np.load(self.labels[idx])}
-        mllog_end(key="sample_load", value={"start": t0, "duration": perf_counter_ns() - t0})
-
-        t0 = perf_counter_ns()
         data = self.rand_crop(data)
         data = self.train_transforms(data)
-        mllog_end(key="sample_preproc", value={"start": t0, "duration": perf_counter_ns() - t0})
         
-        return data["image"], data["label"]
+        return data["image"], data["label"], idx
         # return data["image"], data["label"], str(self.images[idx])
 
 # The validation dataset does not do the same preprocessing as the training one 

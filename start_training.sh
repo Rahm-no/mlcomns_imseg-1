@@ -7,12 +7,13 @@ mkdir -p /raid/data/imseg/run_output
 # mkdir -p ${SCRIPT_DIR}/output
 # mkdir -p ${SCRIPT_DIR}/ckpts
 
-NUM_GPUS=${1:-4}
-CONTAINER_NAME=${2:train_imseg}
-BATCH_SIZE=${3:-2}
-DOCKER_IMAGE=${4:-"unet3d:loic"}
-NUM_WORKERS=${5:-1}
-SKIP_STEP_7=${6:-""}
+NUM_GPUS=${1:-8}
+CONTAINER_NAME=${2:train_imseg} 
+LOGGING_DIR=${3:"$SCRIPT_DIR/output"}
+BATCH_SIZE=${4:-4}
+DOCKER_IMAGE=${5:-"unet3d:loic"}
+NUM_WORKERS=${6:-8}
+NUM_EPOCHS=${7:-50}
 
 DOCKER_MEMORY=
 DOCKER_MEMORY_PARAM=
@@ -25,7 +26,6 @@ fi
 docker run --ipc=host --name=$CONTAINER_NAME -it --rm --runtime=nvidia $DOCKER_MEMORY_PARAM \
 	-v /raid/data/imseg/raw-data/kits19/data/:/raw_data \
 	-v /raid/data/imseg/29gb-npy/:/data \
-	-v /raid/data/imseg/run_output:/results \
+	-v $LOGGING_DIR:/results \
 	-v /raid/data/imseg/run_output:/ckpts \
-	$DOCKER_IMAGE /bin/bash run_and_time.sh 1 $NUM_GPUS $BATCH_SIZE $NUM_WORKERS $SKIP_STEP_7
-	# $DOCKER_IMAGE /bin/bash
+	$DOCKER_IMAGE /bin/bash run_and_time.sh 1 $NUM_GPUS $BATCH_SIZE $NUM_WORKERS $NUM_EPOCHS 

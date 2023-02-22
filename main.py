@@ -52,6 +52,7 @@ def main():
 
     callbacks = get_callbacks(flags, dllogger, local_rank, world_size)
     flags.seed = worker_seed
+    flags.sampler_seed = shuffling_seeds[0]
     model = Unet3D(1, 3, normalization=flags.normalization, activation=flags.activation)
 
     mllog_end(key=constants.INIT_STOP, sync=True)

@@ -41,6 +41,9 @@ def mllog_end(*args, **kwargs):
 def mllog_event(*args, **kwargs):
     _mllog_print(mllogger.event, *args, **kwargs)
 
+def all_workers_print(*args):
+    mllogger.event(*args, stack_offset=3)
+
 
 def _mllog_print(logger, *args, **kwargs):
     """
