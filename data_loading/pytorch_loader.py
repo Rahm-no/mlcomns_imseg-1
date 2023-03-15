@@ -152,8 +152,7 @@ class PytTrain(Dataset):
         data = self.rand_crop(data)
         data = self.train_transforms(data)
         
-        return data["image"], data["label"], idx
-        # return data["image"], data["label"], str(self.images[idx])
+        return data["image"], data["label"]
 
 # The validation dataset does not do the same preprocessing as the training one 
 # simply returning the raw image. We would thus expect it to yield images faster
