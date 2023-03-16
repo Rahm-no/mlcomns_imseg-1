@@ -3,37 +3,31 @@ import numpy as np
 import random
 from numpy.random import default_rng
 from os.path import join 
+from pathlib import Path
 
 NUM_CASES = 210
 
-DIM1_MEAN = 246
-DIM1_STD = 87
-
-DIM2_MEAN = 339
-DIM2_STD = 46
-
 def gen_dataset_random(datadir):
+    Path(datadir).mkdir(exist_ok=True, parents=True)
 
     for case in range(NUM_CASES):
         
         name_x = f'case_{case:05d}_x.npy'
         name_y = f'case_{case:05d}_y.npy'
 
-        dim1 = int(random.gauss(DIM1_MEAN, DIM1_STD))
-        dim2 = int(random.gauss(DIM2_MEAN, DIM2_STD))
+        size1 = random.randint(128, 470)
+        size2 = random.randint(186, 434)
 
-        # dimensions cannot be smaller than 128
-        if dim1 < 128:
-            dim1 = 128
+        case_x = np.random.uniform(low=-2.340702, high=2.639792, size=(1, size1, size2, size2))
+        case_y = np.random.randint(0, 2, size=(1, size1, size2, size2))
 
-        if dim2 < 128:
-            dim2 = 128
-
-        case_x = np.random.randn(1, dim1, dim2, dim2).astype('float32')
-        case_y = np.random.random_integers(low=0, high=1, size=(1, dim1, dim2, dim2)).astype('int8')
+        case_x = case_x.astype(np.float32)
+        case_y = case_y.astype(np.uint8)
 
         np.save(join(datadir, name_x), case_x)
         np.save(join(datadir, name_y), case_y)
+
+        print(f'Generated case {case}')
 
 
 if __name__=='__main__':
