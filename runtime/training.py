@@ -299,53 +299,51 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
 
             mllog_end(key="load_batch_mem", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
 
-            t_compute = perf_counter_ns()
+            t0 = t_compute = perf_counter_ns()
 
-            time.sleep(random.normal(compute_time_mean, compute_time_std))
+            image, label = image.to(device), label.to(device)
+            mllog_end(key="load_batch_gpu", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
 
-            # image, label = image.to(device), label.to(device)
-            # # mllog_end(key="load_batch_gpu", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
+            # t0 = perf_counter_ns()
+            for callback in callbacks:
+                callback.on_batch_start()
 
-            # # t0 = perf_counter_ns()
-            # for callback in callbacks:
-            #     callback.on_batch_start()
+            with autocast(enabled=flags.amp):
+                output = model(image)
+                mllog_end(key="model_forward_pass", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
 
-            # with autocast(enabled=flags.amp):
-            #     output = model(image)
-            #     # mllog_end(key="model_forward_pass", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
-
-            #     # t0 = perf_counter_ns()
-            #     loss_value = loss_fn(output, label)
-            #     loss_value /= flags.ga_steps
-            #     # mllog_end(key="loss_tensor_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
+                t0 = perf_counter_ns()
+                loss_value = loss_fn(output, label)
+                loss_value /= flags.ga_steps
+                mllog_end(key="loss_tensor_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             
-            # # https://pytorch.org/docs/stable/notes/ddp.html#internal-design
-            # # When gradients in one bucket are all ready, the Reducer kicks off an asynchronous allreduce on that bucket to 
-            # # calculate mean of gradients across all processes. When all buckets are ready, the Reducer will block waiting 
-            # # for all allreduce operations to finish. When this is done, averaged gradients are written to the param.grad field of all parameters. 
-            # # After the backward pass, the grad field on the same corresponding parameter across different DDP processes should be the same.
-            # #
-            # # --> Parameter syncing happens throughout the backward() operation, and at the granularity of gradient buckets
-            # # t0 = perf_counter_ns()
-            # if flags.amp:
-            #     scaler.scale(loss_value).backward()
-            # else:
-            #     loss_value.backward()
-            # # mllog_end(key="model_backward_pass", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
+            # https://pytorch.org/docs/stable/notes/ddp.html#internal-design
+            # When gradients in one bucket are all ready, the Reducer kicks off an asynchronous allreduce on that bucket to 
+            # calculate mean of gradients across all processes. When all buckets are ready, the Reducer will block waiting 
+            # for all allreduce operations to finish. When this is done, averaged gradients are written to the param.grad field of all parameters. 
+            # After the backward pass, the grad field on the same corresponding parameter across different DDP processes should be the same.
+            #
+            # --> Parameter syncing happens throughout the backward() operation, and at the granularity of gradient buckets
+            t0 = perf_counter_ns()
+            if flags.amp:
+                scaler.scale(loss_value).backward()
+            else:
+                loss_value.backward()
+            mllog_end(key="model_backward_pass", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             
-            # # From the optimizer’s perspective, it is optimizing a local model. Model replicas on all DDP processes can keep in sync because 
-            # # they all start from the same state and they have the same averaged gradients in every iteration.
-            # # t0 = perf_counter_ns()
-            # if (iteration + 1) % flags.ga_steps == 0:
-            #     if flags.amp:
-            #         scaler.step(optimizer)
-            #         scaler.update()
-            #     else:
-            #         optimizer.step()
-            #     optimizer.zero_grad()
-            # # mllog_end(key="model_optim_step", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
+            # From the optimizer’s perspective, it is optimizing a local model. Model replicas on all DDP processes can keep in sync because 
+            # they all start from the same state and they have the same averaged gradients in every iteration.
+            # t0 = perf_counter_ns()
+            if (iteration + 1) % flags.ga_steps == 0:
+                if flags.amp:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
+                optimizer.zero_grad()
+            mllog_end(key="model_optim_step", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             
-            # # t0 = perf_counter_ns()
+            t0 = perf_counter_ns()
             # if not skip_step_7:
             #     # Calls an explicit all_reduce on the batch's loss_tensor
             #     # detach returns a cpy of the tensor, detached from graph
@@ -353,7 +351,7 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
             #     loss_value = reduce_tensor(loss_value, world_size).detach().cpu().numpy()
             #     cumulative_loss.append(loss_value)
             
-            # mllog_end(key="cum_loss_fn_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
+            mllog_end(key="cum_loss_fn_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
 
             mllog_end(key="all_compute", value={"start": t_iter, "duration": perf_counter_ns() - t_compute}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             mllog_end(key="step_end", value={"start": t_iter, "duration": perf_counter_ns() - t_iter}, metadata={CONSTANTS.EPOCH_NUM: epoch})

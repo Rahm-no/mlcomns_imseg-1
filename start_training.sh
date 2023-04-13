@@ -7,7 +7,7 @@ mkdir -p /raid/data/imseg/run_output
 NUM_GPUS=${1:-8}
 CONTAINER_NAME=${2:train_imseg} 
 LOGGING_DIR=${3:-"$SCRIPT_DIR/output"}
-DOCKER_IMAGE=${4:-"unet3d:sleep"}
+DOCKER_IMAGE=${4:-"unet3d:load-only"}
 BATCH_SIZE=${5:-4}
 NUM_WORKERS=${6:-1}
 NUM_EPOCHS=${7:-30}
