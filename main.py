@@ -39,7 +39,6 @@ def main():
     mllog_event(key='world_size', value=world_size, sync=False)
     mllog_event(key='local_rank', value=local_rank, sync=False)
     mllog_event(key='num_workers', value=flags.num_workers, sync=False)
-    mllog_event(key='skip_step_7', value=flags.skip_step_7, sync=False)
 
     worker_seeds, shuffling_seeds = setup_seeds(flags.seed, flags.epochs, device)
     worker_seed = worker_seeds[local_rank]
@@ -76,7 +75,7 @@ def main():
 
     if flags.exec_mode == 'train':
         train(flags, model, train_dataloader, val_dataloader, loss_fn, score_fn, 
-              device=device, callbacks=callbacks, is_distributed=is_distributed, skip_step_7=flags.skip_step_7)
+              device=device, callbacks=callbacks, is_distributed=is_distributed)
 
     elif flags.exec_mode == 'evaluate':
         eval_metrics = evaluate(flags, model, val_dataloader, loss_fn, score_fn,

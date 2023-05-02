@@ -31,17 +31,10 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
     scores = []
     with torch.no_grad():
         
-        t_iter = t0 = perf_counter_ns()
         for _, batch in enumerate(tqdm(loader, disable=(rank != 0) or not flags.verbose)):
             image, label = batch
-
-            mllog_end(key="eval_load_batch_mem", value={"start": t0, "duration": perf_counter_ns() - t0, "image_shape": image.shape}, metadata = {"eval_epoch_num": epoch})
-            
-            t0 = perf_counter_ns()
             image, label = image.to(device), label.to(device)
-            mllog_end(key="eval_load_batch_gpu", value={"start": t0, "duration": perf_counter_ns() - t0, "image_shape": image.shape}, metadata = {"eval_epoch_num": epoch})
 
-            t0 = perf_counter_ns()
             if image.numel() == 0:
                 continue
 
@@ -55,22 +48,14 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
                     mode="gaussian",
                     padding_val=-2.2
                 )
-                mllog_end(key="eval_sliding_window", value={"start": t0, "duration": perf_counter_ns() - t0, "image_shape": image.shape}, metadata = {"eval_epoch_num": epoch})
 
-                t0 = perf_counter_ns()
                 eval_loss_value = loss_fn(output, label)
                 scores.append(score_fn(output, label))
-                mllog_end(key="eval_loss_and_score_fn", value={"start": t0, "duration": perf_counter_ns() - t0, "image_shape": image.shape}, metadata = {"eval_epoch_num": epoch})
             
             eval_loss.append(eval_loss_value)
             del output
             del label
 
-            mllog_end(key="eval_step_end", value={"start": t_iter, "duration": perf_counter_ns() - t_iter}, metadata={CONSTANTS.EPOCH_NUM: epoch})
-            # Restart counters for next iteration
-            t_iter = t0 = perf_counter_ns()
-
-    t0 = perf_counter_ns()
     scores = reduce_tensor(torch.mean(torch.stack(scores, dim=0), dim=0), world_size)
     eval_loss = reduce_tensor(torch.mean(torch.stack(eval_loss, dim=0), dim=0), world_size)
     # scores = torch.mean(torch.stack(scores, dim=0), dim=0)
@@ -81,8 +66,6 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
                     "L2 dice": scores[-1],
                     "mean_dice": (scores[-1] + scores[-2]) / 2,
                     "eval_loss": eval_loss}
-
-    mllog_end(key="eval_scores_and_loss_reduction", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
 
     return eval_metrics
 

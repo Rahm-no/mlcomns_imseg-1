@@ -30,7 +30,7 @@ def lr_warmup(optimizer, init_lr, lr, current_epoch, warmup_epochs):
         param_group["lr"] = init_lr + (lr - init_lr) * scale
 
 
-def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, callbacks, is_distributed, skip_step_7=False):
+def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, callbacks, is_distributed):
     rank = get_rank()
 
     world_size = get_world_size()
@@ -78,28 +78,19 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
         optimizer.zero_grad()
         
         # start timers
-        t_iter = t0 = perf_counter_ns()
         for iteration, batch in enumerate(tqdm(train_loader, disable=(rank != 0) or not flags.verbose)):
             image, label = batch
 
-            mllog_end(key="load_batch_mem", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
-
-            t_compute = t0 = perf_counter_ns()
             image, label = image.to(device), label.to(device)
-            mllog_end(key="load_batch_gpu", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
 
-            t0 = perf_counter_ns()
             for callback in callbacks:
                 callback.on_batch_start()
 
             with autocast(enabled=flags.amp):
                 output = model(image)
-                mllog_end(key="model_forward_pass", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
 
-                t0 = perf_counter_ns()
                 loss_value = loss_fn(output, label)
                 loss_value /= flags.ga_steps
-                mllog_end(key="loss_tensor_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             
             # https://pytorch.org/docs/stable/notes/ddp.html#internal-design
             # When gradients in one bucket are all ready, the Reducer kicks off an asynchronous allreduce on that bucket to 
@@ -108,16 +99,13 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
             # After the backward pass, the grad field on the same corresponding parameter across different DDP processes should be the same.
             #
             # --> Parameter syncing happens throughout the backward() operation, and at the granularity of gradient buckets
-            t0 = perf_counter_ns()
             if flags.amp:
                 scaler.scale(loss_value).backward()
             else:
                 loss_value.backward()
-            mllog_end(key="model_backward_pass", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             
             # From the optimizer’s perspective, it is optimizing a local model. Model replicas on all DDP processes can keep in sync because 
             # they all start from the same state and they have the same averaged gradients in every iteration.
-            t0 = perf_counter_ns()
             if (iteration + 1) % flags.ga_steps == 0:
                 if flags.amp:
                     scaler.step(optimizer)
@@ -125,25 +113,13 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
                 else:
                     optimizer.step()
                 optimizer.zero_grad()
-            mllog_end(key="model_optim_step", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
             
-            t0 = perf_counter_ns()
-            if not skip_step_7:
-                # Calls an explicit all_reduce on the batch's loss_tensor
-                # detach returns a cpy of the tensor, detached from graph
-                # cpu moves it from GPU to CPU
-                loss_value = reduce_tensor(loss_value, world_size).detach().cpu().numpy()
-                cumulative_loss.append(loss_value)
+            # Calls an explicit all_reduce on the batch's loss_tensor
+            # detach returns a cpy of the tensor, detached from graph
+            # cpu moves it from GPU to CPU
+            loss_value = reduce_tensor(loss_value, world_size).detach().cpu().numpy()
+            cumulative_loss.append(loss_value)
             
-            mllog_end(key="cum_loss_fn_calc", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata={CONSTANTS.EPOCH_NUM: epoch})
-
-            mllog_end(key="all_compute", value={"start": t_iter, "duration": perf_counter_ns() - t_compute}, metadata={CONSTANTS.EPOCH_NUM: epoch})
-            mllog_end(key="step_end", value={"start": t_iter, "duration": perf_counter_ns() - t_iter}, metadata={CONSTANTS.EPOCH_NUM: epoch})
-            # Restart counters for next iteration
-            t_iter = t0 = perf_counter_ns()
-
-
-        # logfile.flush()
 
         mllog_end(key=CONSTANTS.EPOCH_STOP, sync=False,
                   metadata={CONSTANTS.EPOCH_NUM: epoch, 'current_lr': optimizer.param_groups[0]['lr']})
@@ -160,9 +136,7 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
             del output
 
             eval_metrics = evaluate(flags, model, val_loader, loss_fn, score_fn, device, epoch)
-
-            if not skip_step_7:
-                eval_metrics["train_loss"] = sum(cumulative_loss) / len(cumulative_loss)
+            eval_metrics["train_loss"] = sum(cumulative_loss) / len(cumulative_loss)
 
             mllog_event(key=CONSTANTS.EVAL_ACCURACY, 
                         value=eval_metrics["mean_dice"], 
