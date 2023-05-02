@@ -1,15 +1,12 @@
 from tqdm import tqdm
-import os
 from time import perf_counter_ns
-import time
-
 import torch
 from torch.optim import Adam, SGD
 from torch.cuda.amp import autocast, GradScaler
 
 from runtime.distributed_utils import get_rank, reduce_tensor, get_world_size
 from runtime.inference import evaluate
-from runtime.logging import mllog_event, mllog_start, mllog_end, CONSTANTS, all_workers_print
+from runtime.logging import mllog_event, mllog_start, mllog_end, CONSTANTS
 
 
 def get_optimizer(params, flags):
@@ -33,24 +30,8 @@ def lr_warmup(optimizer, init_lr, lr, current_epoch, warmup_epochs):
         param_group["lr"] = init_lr + (lr - init_lr) * scale
 
 
-def busy_wait(dt):   
-    current_time = time.time()
-    while (time.time() < current_time+dt):
-        pass
-
-def emulate_compute(device, sec):
-    if (str(device).find("GPU")!=-1):
-        # print("Putting GPU into sleep for %10.5f sec"%sec)
-        cuda.nanosleep(sec*1_000_000_000)
-    else:
-        time.sleep(sec)
-
 def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, callbacks, is_distributed, skip_step_7=False):
     rank = get_rank()
-
-    # filename=os.path.join("/results", f'cases_read_{rank}.log')
-    # logfile = open(filename, "w")
-    # mllog_start(f"Rank {rank} opened {logfile} for writing\n")
 
     world_size = get_world_size()
     torch.backends.cudnn.benchmark = flags.cudnn_benchmark
@@ -62,14 +43,14 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
                                                          milestones=flags.lr_decay_epochs,
                                                          gamma=flags.lr_decay_factor)
     scaler = GradScaler()
-    # Model an loss function are on GPU
+    # Model and loss function are on GPU
     model.to(device)
     loss_fn.to(device)
+    
     if is_distributed:
         model = torch.nn.parallel.DistributedDataParallel(model,
                                                           device_ids=[rank],
                                                           output_device=rank)
-
     is_successful = False
     diverged = False
     next_eval_at = flags.start_eval_at
@@ -79,10 +60,7 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
 
     eval_num = 0
 
-    cases_seen = set()
-
     for epoch in range(1, flags.epochs + 1):
-        # logfile.write(f"Starting epoch {epoch}\n")
         cumulative_loss = []
 
         if epoch <= flags.lr_warmup_epochs and flags.lr_warmup_epochs > 0:
@@ -91,6 +69,7 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
         mllog_start(key=CONSTANTS.BLOCK_START, sync=False,
                     metadata={CONSTANTS.FIRST_EPOCH_NUM: epoch, CONSTANTS.EPOCH_COUNT: 1})
         mllog_start(key=CONSTANTS.EPOCH_START, metadata={CONSTANTS.EPOCH_NUM: epoch}, sync=False)
+
         # Necessary for DDP
         if is_distributed:
             train_loader.sampler.set_epoch(epoch)
@@ -101,14 +80,7 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
         # start timers
         t_iter = t0 = perf_counter_ns()
         for iteration, batch in enumerate(tqdm(train_loader, disable=(rank != 0) or not flags.verbose)):
-            image, label, indices = batch
-
-            for idx in indices:
-                cases_seen.add(idx)
-
-            if len(cases_seen) == 168:
-                mllog_end(f"ALL CASES SEEN")
-
+            image, label = batch
 
             mllog_end(key="load_batch_mem", value={"start": t0, "duration": perf_counter_ns() - t0}, metadata = {CONSTANTS.EPOCH_NUM: epoch})
 
@@ -182,14 +154,11 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
         if epoch == next_eval_at:
             mllog_start(key=CONSTANTS.EVAL_START, value=epoch, metadata={CONSTANTS.EPOCH_NUM: epoch}, sync=False)
 
-            # logfile.write(f"Starting eval {epoch}\n")
             eval_num += 1
-
             next_eval_at += flags.evaluate_every
 
             del output
 
-            # eval_metrics = evaluate(flags, model, val_loader, loss_fn, score_fn, device, epoch, logfile)
             eval_metrics = evaluate(flags, model, val_loader, loss_fn, score_fn, device, epoch)
 
             if not skip_step_7:
@@ -217,10 +186,6 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
 
         if is_successful or diverged:
             break
-
-    # logfile.write(f"Training done\n")
-    # logfile.flush()
-    # logfile.close()
 
     mllog_end(key=CONSTANTS.RUN_STOP, sync=True,
               metadata={CONSTANTS.STATUS: CONSTANTS.SUCCESS if is_successful else CONSTANTS.ABORTED})
