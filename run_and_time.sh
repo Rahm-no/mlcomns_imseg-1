@@ -8,9 +8,7 @@ set -e
 SEED=${1:--1} 
 NUM_GPUS=${2:-1}
 BATCH_SIZE=${3:-2}
-NUM_WORKERS=${4:-1}
-NUM_EPOCHS=${5:-50}
-
+NUM_EPOCHS=${4:-50}
 
 QUALITY_THRESHOLD="0.908"
 START_EVAL_AT=25
@@ -49,7 +47,7 @@ python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
     --seed ${SEED} \
     --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
     --save_ckpt_path ${SAVE_CKPT_PATH} \
-    --num_workers ${NUM_WORKERS}
+    --num_workers 1
 
 	# end timing
 	end=$(date +%s)
