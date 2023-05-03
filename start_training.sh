@@ -3,8 +3,8 @@
 SCRIPT_DIR=$( dirname -- "$( readlink -f -- "$0"; )" )
 
 # Change these directories to your values!
-CKPT_DIR="$SCRIPT_DIR/ckpts"
-DATA_DIR="$SCRIPT_DIR/data"
+CKPT_DIR=""
+DATA_DIR=""
 
 
 NUM_GPUS=${1:-8}
