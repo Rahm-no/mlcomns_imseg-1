@@ -10,7 +10,7 @@ DATA_DIR=""
 NUM_GPUS=${1:-8}
 CONTAINER_NAME=${2:train_unet3d}
 LOGGING_DIR=${3:-"$SCRIPT_DIR/output"}
-DOCKER_IMAGE=${4:-"unet3d:instrumented"}
+DOCKER_IMAGE=${4:-"unet3d:sleep"}
 BATCH_SIZE=${5:-4}
 NUM_EPOCHS=${6:-30}
 
