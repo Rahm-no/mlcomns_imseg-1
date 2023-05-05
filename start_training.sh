@@ -3,7 +3,7 @@
 SCRIPT_DIR=$( dirname -- "$( readlink -f -- "$0"; )" )
 
 # Change these directories to your values!
-CKPT_DIR=""
+OUTPUT_DIR=""
 DATA_DIR=""
 
 
@@ -17,5 +17,5 @@ NUM_EPOCHS=${6:-30}
 docker run --ipc=host --name=$CONTAINER_NAME -it --rm --runtime=nvidia \
 	-v ${DATA_DIR}:/data \
 	-v ${LOGGING_DIR}:/results \
-	-v ${CKPT_DIR}:/ckpts \
+	-v ${OUTPUT_DIR}:/ckpts \
 	$DOCKER_IMAGE /bin/bash run_and_time.sh 1 $NUM_GPUS $BATCH_SIZE $NUM_EPOCHS 
