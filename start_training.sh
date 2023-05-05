@@ -10,9 +10,9 @@ DATA_DIR=""
 NUM_GPUS=${1:-8}
 CONTAINER_NAME=${2:train_unet3d}
 LOGGING_DIR=${3:-"$SCRIPT_DIR/output"}
-DOCKER_IMAGE=${4:-"unet3d:instrumented"}
+DOCKER_IMAGE=${4:-"unet3d:original"}
 BATCH_SIZE=${5:-4}
-NUM_EPOCHS=${6:-30}
+NUM_EPOCHS=${6:-50}
 
 docker run --ipc=host --name=$CONTAINER_NAME -it --rm --runtime=nvidia \
 	-v ${DATA_DIR}:/data \
