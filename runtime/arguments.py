@@ -4,12 +4,14 @@ import argparse
 PARSER = argparse.ArgumentParser(description="UNet-3D")
 
 PARSER.add_argument('--data_dir', dest='data_dir', required=True)
+PARSER.add_argument('--raw_dir', dest='raw_dir', required = True)
 PARSER.add_argument('--log_dir', dest='log_dir', type=str, default="/tmp")
+PARSER.add_argument('--image_spacings', dest='image_spacing_dic', type=dict, default=dict())
 PARSER.add_argument('--save_ckpt_path', dest='save_ckpt_path', type=str, default="")
 PARSER.add_argument('--load_ckpt_path', dest='load_ckpt_path', type=str, default="")
 PARSER.add_argument('--loader', dest='loader', default="pytorch", type=str)
 PARSER.add_argument("--local_rank", default=os.environ.get("LOCAL_RANK", 0), type=int)
-
+PARSER.add_argument("--disable_logging", action="store_true")  # Add the --disable_logging argument
 PARSER.add_argument('--epochs', dest='epochs', type=int, default=1)
 PARSER.add_argument('--quality_threshold', dest='quality_threshold', type=float, default=0.908)
 PARSER.add_argument('--ga_steps', dest='ga_steps', type=int, default=1)
@@ -21,6 +23,7 @@ PARSER.add_argument('--val_input_shape', nargs='+', type=int, default=[128, 128,
 PARSER.add_argument('--seed', dest='seed', default=-1, type=int)
 PARSER.add_argument('--num_workers', dest='num_workers', type=int, default=8)
 PARSER.add_argument('--exec_mode', dest='exec_mode', choices=['train', 'evaluate'], default='train')
+#PARSER.add_argument('--results_dir', dest='results_dir', required=True)
 
 PARSER.add_argument('--benchmark', dest='benchmark', action='store_true', default=False)
 PARSER.add_argument('--amp', dest='amp', action='store_true', default=False)

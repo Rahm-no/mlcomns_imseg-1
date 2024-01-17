@@ -1,0 +1,49 @@
+STARTING TIMING RUN AT 2023-09-13 06:37:20 PM
+:::MLLOG {"namespace": "", "time_ms": 1694630241351, "event_type": "POINT_IN_TIME", "key": "cache_clear", "value": true, "metadata": {"file": "<string>", "lineno": 4}}
+:::MLLOG {"namespace": "", "time_ms": 1694630243722, "event_type": "INTERVAL_START", "key": "init_start", "value": null, "metadata": {"file": "main.py", "lineno": 49}}
+Format conversion /raw_data
+:::MLLOG {"namespace": "", "time_ms": 1694630243721, "event_type": "INTERVAL_START", "key": "init_start", "value": null, "metadata": {"file": "main.py", "lineno": 49}}
+Format conversion /raw_data
+:::MLLOG {"namespace": "", "time_ms": 1694630243723, "event_type": "INTERVAL_START", "key": "init_start", "value": null, "metadata": {"file": "main.py", "lineno": 49}}
+Format conversion /raw_data
+:::MLLOG {"namespace": "", "time_ms": 1694630243724, "event_type": "INTERVAL_START", "key": "init_start", "value": null, "metadata": {"file": "main.py", "lineno": 49}}
+Format conversion /raw_data
+Distributed initialized. World size: 4
+:::MLLOG {"namespace": "", "time_ms": 1694630248321, "event_type": "POINT_IN_TIME", "key": "world_size", "value": 4, "metadata": {"file": "main.py", "lineno": 65}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248323, "event_type": "POINT_IN_TIME", "key": "local_rank", "value": 0, "metadata": {"file": "main.py", "lineno": 66}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248323, "event_type": "POINT_IN_TIME", "key": "Batch size used", "value": 4, "metadata": {"file": "main.py", "lineno": 67}}
+Using master seed from command line: 1
+Using master seed from command line: 1
+Using master seed from command line: 1
+:::MLLOG {"namespace": "", "time_ms": 1694630248323, "event_type": "POINT_IN_TIME", "key": "Epochs", "value": 50, "metadata": {"file": "main.py", "lineno": 68}}
+Using master seed from command line: 1
+:::MLLOG {"namespace": "", "time_ms": 1694630248325, "event_type": "POINT_IN_TIME", "key": "seed", "value": 1, "metadata": {"file": "main.py", "lineno": 74}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248325, "event_type": "POINT_IN_TIME", "key": "submission_benchmark", "value": "unet3d", "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 64}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248325, "event_type": "POINT_IN_TIME", "key": "submission_org", "value": "your-company", "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 69}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248326, "event_type": "POINT_IN_TIME", "key": "submission_division", "value": "closed", "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 73}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248326, "event_type": "POINT_IN_TIME", "key": "submission_status", "value": "onprem", "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 77}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248326, "event_type": "POINT_IN_TIME", "key": "submission_platform", "value": "your_platform", "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 81}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248326, "event_type": "POINT_IN_TIME", "key": "opt_name", "value": "sgd", "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 87}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248326, "event_type": "POINT_IN_TIME", "key": "opt_base_learning_rate", "value": 0.8, "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 88}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248326, "event_type": "POINT_IN_TIME", "key": "opt_learning_rate_warmup_epochs", "value": 0, "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 89}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248327, "event_type": "POINT_IN_TIME", "key": "opt_learning_rate_decay_boundary_epochs", "value": [], "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 91}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248327, "event_type": "POINT_IN_TIME", "key": "opt_learning_rate_decay_factor", "value": 1.0, "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 92}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248327, "event_type": "POINT_IN_TIME", "key": "opt_weight_decay", "value": 0.0, "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 93}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248327, "event_type": "POINT_IN_TIME", "key": "opt_momentum", "value": 0.9, "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 94}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248327, "event_type": "POINT_IN_TIME", "key": "oversampling", "value": 0.4, "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 95}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248327, "event_type": "POINT_IN_TIME", "key": "training_input_shape", "value": [128, 128, 128], "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 96}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248328, "event_type": "POINT_IN_TIME", "key": "validation_input_shape", "value": [128, 128, 128], "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 97}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248328, "event_type": "POINT_IN_TIME", "key": "validation_overlap", "value": 0.5, "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 98}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248328, "event_type": "POINT_IN_TIME", "key": "Loader", "value": "pytorch", "metadata": {"file": "/workspace/unet3d/runtime/logging.py", "lineno": 99}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248594, "event_type": "INTERVAL_START", "key": "run_start", "value": null, "metadata": {"file": "main.py", "lineno": 85}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248594, "event_type": "POINT_IN_TIME", "key": "loader", "value": "pytorch", "metadata": {"file": "main.py", "lineno": 86}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248594, "event_type": "INTERVAL_END", "key": "init_stop", "value": null, "metadata": {"file": "main.py", "lineno": 87}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248595, "event_type": "POINT_IN_TIME", "key": "Num of workers", "value": 20, "metadata": {"file": "main.py", "lineno": 94}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248598, "event_type": "POINT_IN_TIME", "key": "train_samples", "value": 206, "metadata": {"file": "/workspace/unet3d/data_loading/data_loader.py", "lineno": 64}}
+:::MLLOG {"namespace": "", "time_ms": 1694630248598, "event_type": "POINT_IN_TIME", "key": "eval_samples", "value": 4, "metadata": {"file": "/workspace/unet3d/data_loading/data_loader.py", "lineno": 65}}
+:::MLLOG {"namespace": "", "time_ms": 1694630251279, "event_type": "POINT_IN_TIME", "key": "len train_dataloader", "value": 3, "metadata": {"file": "main.py", "lineno": 152}}
+:::MLLOG {"namespace": "", "time_ms": 1694630251279, "event_type": "POINT_IN_TIME", "key": "len val_dataloader", "value": 1, "metadata": {"file": "main.py", "lineno": 153}}
+:::MLLOG {"namespace": "", "time_ms": 1694630251280, "event_type": "POINT_IN_TIME", "key": "samples_per_epoch", "value": 48, "metadata": {"file": "main.py", "lineno": 157}}
+:::MLLOG {"namespace": "", "time_ms": 1694630251280, "event_type": "POINT_IN_TIME", "key": "global_batch_size", "value": 16, "metadata": {"file": "main.py", "lineno": 161}}
+:::MLLOG {"namespace": "", "time_ms": 1694630251281, "event_type": "POINT_IN_TIME", "key": "gradient_accumulation_steps", "value": 1, "metadata": {"file": "main.py", "lineno": 162}}
+:::MLLOG {"namespace": "", "time_ms": 1694630251282, "event_type": "POINT_IN_TIME", "key": "Here is where the training function is called", "value": null, "metadata": {"file": "main.py", "lineno": 171}}

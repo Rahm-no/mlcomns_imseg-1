@@ -11,7 +11,7 @@ from torch.nn.functional import interpolate
 
 
 EXCLUDED_CASES = []#[23, 68, 125, 133, 15, 37]
-MAX_ID = 210
+MAX_ID = 589 #kits23 210
 MEAN_VAL = 101.0
 STDDEV_VAL = 76.9
 MIN_CLIP_VAL = -79.0
@@ -57,15 +57,15 @@ class Preprocessor:
 
     def preprocess_dataset(self):
         os.makedirs(self.results_dir, exist_ok=True)
-        print(f"Preprocessing {self.data_dir}")
+        print(f"Format conversion {self.data_dir}")
         for case in sorted([f for f in os.listdir(self.data_dir) if "case" in f]):
             case_id = int(case.split("_")[1])
             if case_id in EXCLUDED_CASES or case_id >= MAX_ID:
                 print("Case {}. Skipped.".format(case_id))
                 continue
             image, label, image_spacings = self.load_pair(case)
-            image, label = self.preprocess_case(image, label, image_spacings)
-            image, label = self.pad_to_min_shape(image, label)
+            #image, label = self.preprocess_case(image, label, image_spacings)
+            #image, label = self.pad_to_min_shape(image, label)
             self.save(image, label, case)
         print(self.stats.get_string())
 
@@ -144,9 +144,8 @@ if __name__ == '__main__':
     if args.mode == "preprocess":
         preprocessor = Preprocessor(args)
         preprocessor.preprocess_dataset()
-        verify_dataset(args.results_dir)
+       # verify_dataset(args.results_dir)
 
-    if args.mode == "verify":
-        verify_dataset(args.results_dir)
-
+   # if args.mode == "verify":
+    #    verify_dataset(args.results_dir)
 

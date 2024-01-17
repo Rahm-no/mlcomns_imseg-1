@@ -5,18 +5,20 @@ set -e
 # to use the script:
 #   run_and_time.sh <random seed 1-5> <num_gpus>
 
-SEED=${1:--1}
-ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
+SEED=${1:--1} 
+NUM_GPUS=${2:-4}
+BATCH_SIZE=${3:-4}
+NUM_WORKERS=${4:-1}
+NUM_EPOCHS=${5:-50}
 
-NUM_GPUS=${2:-1}
-MAX_EPOCHS=50
+
 QUALITY_THRESHOLD="0.908"
 START_EVAL_AT=25
-EVALUATE_EVERY=2
+EVALUATE_EVERY=25
 LEARNING_RATE="0.8"
-LR_WARMUP_EPOCHS=10
+LR_WARMUP_EPOCHS=0
 DATASET_DIR="/data"
-BATCH_SIZE=2
+RAW_DATASET_DIR="/raw_data"
 GRADIENT_ACCUMULATION_STEPS=1
 SAVE_CKPT_PATH="/ckpts"
 
@@ -33,9 +35,14 @@ from mlperf_logging.mllog import constants
 from runtime.logging import mllog_event
 mllog_event(key=constants.CACHE_CLEAR, value=True)"
 
+
+
+ddplaunch=$(python -c "from os import path; import torch; print(path.join(path.dirname(torch.__file__), 'distributed', 'launch.py'))")
+
   python $ddplaunch --nnode=1 --node_rank=0 --nproc_per_node=${NUM_GPUS} main.py \
     --data_dir ${DATASET_DIR} \
-    --epochs ${MAX_EPOCHS} \
+    --raw_dir  ${RAW_DATASET_DIR} \
+    --epochs  ${NUM_EPOCHS} \
     --evaluate_every ${EVALUATE_EVERY} \
     --start_eval_at ${START_EVAL_AT} \
     --quality_threshold ${QUALITY_THRESHOLD} \
@@ -46,7 +53,7 @@ mllog_event(key=constants.CACHE_CLEAR, value=True)"
     --seed ${SEED} \
     --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
     --save_ckpt_path ${SAVE_CKPT_PATH} \
-    --num_workers 0
+    --num_workers 20
 
 	# end timing
 	end=$(date +%s)

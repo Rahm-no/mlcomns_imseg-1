@@ -1,13 +1,27 @@
+import subprocess
 from tqdm import tqdm
-import os
-
+from time import perf_counter_ns
 import torch
 from torch.optim import Adam, SGD
 from torch.cuda.amp import autocast, GradScaler
-
+from runtime.logging import get_dllogger
 from runtime.distributed_utils import get_rank, reduce_tensor, get_world_size
 from runtime.inference import evaluate
 from runtime.logging import mllog_event, mllog_start, mllog_end, CONSTANTS
+from runtime.distributed_utils import init_distributed, get_world_size, get_device, is_main_process, get_rank
+from runtime.callbacks import get_callbacks
+from data_loading.pytorch_loader import preprocessing
+import asyncio      
+from model.losses import DiceCELoss, DiceScore
+
+
+async def preprocess_batch(flags, batch):
+    prepbatch = preprocessing(flags.batch_size, batch)
+   
+    data =  prepbatch() 
+    subprocess.run(['nvidia-smi'])
+    #await asyncio.sleep(0)
+    return data
 
 
 def get_optimizer(params, flags):
@@ -31,7 +45,47 @@ def lr_warmup(optimizer, init_lr, lr, current_epoch, warmup_epochs):
         param_group["lr"] = init_lr + (lr - init_lr) * scale
 
 
-def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, callbacks, is_distributed):
+
+
+async def train_batch(flags, model,previous_batch,device, callbacks,scaler,iteration, optimizer,world_size, loss_fn,cumulative_loss):
+    loss_value = None
+    image, label, _  = previous_batch
+    image, label = image.to(device), label.to(device)
+    for callback in callbacks:
+        callback.on_batch_start()
+    with autocast(enabled=flags.amp):
+        output = model(image)
+        loss_value = loss_fn(output, label)
+        loss_value /= flags.ga_steps
+    
+    if flags.amp:
+        scaler.scale(loss_value).backward()
+    else:
+        loss_value.backward()
+        
+        # From the optimizer’s perspective, it is optimizing a local model. Model replicas on all DDP processes can keep in sync because 
+        # they all start from the same state and they have the same averaged gradients in every iteration.
+        mllog_event(key='optimizer step')
+        if (iteration + 1) % flags.ga_steps == 0:
+            if flags.amp:
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                optimizer.step()
+            optimizer.zero_grad()
+        
+        # Calls an explicit all_reduce on the batch's loss_tensor
+        # detach returns a cpy of the tensor, detached from graph
+        # cpu moves it from GPU to CPU
+        loss_value = reduce_tensor(loss_value, world_size).detach().cpu().numpy()
+        cumulative_loss.append(loss_value)
+    #await asyncio.sleep(0)
+    return cumulative_loss
+
+
+async def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, callbacks, is_distributed):
+
+    
     rank = get_rank()
 
     world_size = get_world_size()
@@ -44,63 +98,81 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
                                                          milestones=flags.lr_decay_epochs,
                                                          gamma=flags.lr_decay_factor)
     scaler = GradScaler()
-
+    # Model and loss function are on GPU
     model.to(device)
+    print('loss_fn', loss_fn)
     loss_fn.to(device)
+    
+    
     if is_distributed:
         model = torch.nn.parallel.DistributedDataParallel(model,
                                                           device_ids=[rank],
                                                           output_device=rank)
-
     is_successful = False
     diverged = False
     next_eval_at = flags.start_eval_at
     model.train()
     for callback in callbacks:
         callback.on_fit_start()
+
+    eval_num = 0
+
     for epoch in range(1, flags.epochs + 1):
         cumulative_loss = []
 
         if epoch <= flags.lr_warmup_epochs and flags.lr_warmup_epochs > 0:
             lr_warmup(optimizer, flags.init_learning_rate, flags.learning_rate, epoch, flags.lr_warmup_epochs)
+            
         mllog_start(key=CONSTANTS.BLOCK_START, sync=False,
                     metadata={CONSTANTS.FIRST_EPOCH_NUM: epoch, CONSTANTS.EPOCH_COUNT: 1})
         mllog_start(key=CONSTANTS.EPOCH_START, metadata={CONSTANTS.EPOCH_NUM: epoch}, sync=False)
 
+        # Necessary for DDP
         if is_distributed:
             train_loader.sampler.set_epoch(epoch)
 
         loss_value = None
         optimizer.zero_grad()
+        
+        ## Execution of preprocessing to get the batch for training
+        
+        
+        previous_batch = None
+        loop = asyncio.get_event_loop()
+
+
+
         for iteration, batch in enumerate(tqdm(train_loader, disable=(rank != 0) or not flags.verbose)):
-            image, label = batch
+            if iteration == 0:
+                # First iteration, no previous batch
+                
+                prepbatch_task = asyncio.ensure_future(preprocess_batch(flags, batch))
+       
+                await asyncio.wait([prepbatch_task])
 
-            image, label = image.to(device), label.to(device)
-            for callback in callbacks:
-                callback.on_batch_start()
+                prepbatch_result = prepbatch_task.result()
+                data = prepbatch_result
 
-            with autocast(enabled=flags.amp):
-                output = model(image)
-                loss_value = loss_fn(output, label)
-                loss_value /= flags.ga_steps
 
-            if flags.amp:
-                scaler.scale(loss_value).backward()
             else:
-                loss_value.backward()
+                previous_batch = data['image'], data['label'], data
+                current_batch = batch
+                prepbatch_task = asyncio.ensure_future(preprocess_batch(flags, current_batch))
+                train_batch_task = asyncio.ensure_future(train_batch(flags, model, previous_batch, device, callbacks, scaler, iteration, optimizer, world_size, loss_fn, cumulative_loss))
+                # Wait for both tasks to complete
+                await asyncio.wait([prepbatch_task, train_batch_task])
+                 # Wait for both tasks to complete
+                
+                prepbatch_result = prepbatch_task.result()
+                train_batch_result = train_batch_task.result()
+                cumulative_loss = train_batch_result
 
-            if (iteration + 1) % flags.ga_steps == 0:
-                if flags.amp:
-                    scaler.step(optimizer)
-                    scaler.update()
-                else:
-                    optimizer.step()
-
-                optimizer.zero_grad()
-
-            loss_value = reduce_tensor(loss_value, world_size).detach().cpu().numpy()
-            cumulative_loss.append(loss_value)
-
+                data = prepbatch_result
+              
+    
+    
+        
+            
 
         mllog_end(key=CONSTANTS.EPOCH_STOP, sync=False,
                   metadata={CONSTANTS.EPOCH_NUM: epoch, 'current_lr': optimizer.param_groups[0]['lr']})
@@ -109,9 +181,12 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
             scheduler.step()
 
         if epoch == next_eval_at:
-            next_eval_at += flags.evaluate_every
-            del output
             mllog_start(key=CONSTANTS.EVAL_START, value=epoch, metadata={CONSTANTS.EPOCH_NUM: epoch}, sync=False)
+
+            eval_num += 1
+            next_eval_at += flags.evaluate_every
+
+            #del output
 
             eval_metrics = evaluate(flags, model, val_loader, loss_fn, score_fn, device, epoch)
             eval_metrics["train_loss"] = sum(cumulative_loss) / len(cumulative_loss)
@@ -127,9 +202,11 @@ def train(flags, model, train_loader, val_loader, loss_fn, score_fn, device, cal
             model.train()
             if eval_metrics["mean_dice"] >= flags.quality_threshold:
                 is_successful = True
-            elif eval_metrics["mean_dice"] < 1e-6:
-                print("MODEL DIVERGED. ABORTING.")
-                diverged = True
+            
+            # Commented out for experiments
+            # elif eval_metrics["mean_dice"] < 1e-6:
+            #     print("MODEL DIVERGED. ABORTING.")
+            #     diverged = True
 
         mllog_end(key=CONSTANTS.BLOCK_STOP, sync=False,
                   metadata={CONSTANTS.FIRST_EPOCH_NUM: epoch, CONSTANTS.EPOCH_COUNT: 1})

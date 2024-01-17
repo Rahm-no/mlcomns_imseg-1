@@ -5,6 +5,7 @@ import copy
 import torch
 import numpy as np
 
+from runtime.logging import mllog_event, mllog_start, mllog_end, CONSTANTS
 
 def process_performance_stats(timestamps, batch_size, mode):
     """ Get confidence intervals
@@ -145,6 +146,9 @@ class CheckpointCallback(BaseCallback):
                                 **metrics}
 
     def on_fit_end(self, *args, **kwargs):
+        mllog_start(key="checkpoint_start")
         filename = "ckpt_mean_dice_" + str(self._best_metric)
         savepath = os.path.join(self._path, filename)
         torch.save({**self._last_state, **self._best_state, "seed": self._seed}, savepath)
+        time.sleep(5)
+        mllog_end(key="checkpoint_stop")

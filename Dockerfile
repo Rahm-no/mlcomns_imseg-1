@@ -1,16 +1,28 @@
 ARG FROM_IMAGE_NAME=pytorch/pytorch:1.7.1-cuda11.0-cudnn8-runtime
-#ARG FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.02-py3
 FROM ${FROM_IMAGE_NAME}
 
+# Copy the application code
 ADD . /workspace/unet3d
 WORKDIR /workspace/unet3d
 
+# Install additional dependencies and clean up APT cache
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y git
 RUN apt-get install -y vim
 
+# Upgrade pip and install requirements
 RUN pip install --upgrade pip
+RUN pip install memory-profiler
+
 RUN pip install --disable-pip-version-check -r requirements.txt
 
-#RUN pip uninstall -y apex; pip uninstall -y apex; git clone --branch seryilmaz/fused_dropout_softmax  https://github.com/seryilmaz/apex.git; cd apex;  pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" --global-option="--xentropy" --global-option="--deprecated_fused_adam" --global-option="--deprecated_fused_lamb" --global-option="--fast_multihead_attn" .
+#COPY preprocess.py .
+
+
+# Copy the startup script
+#COPY start_training.sh /workspace/unet3d/start_training.sh
+#RUN chmod +x /workspace/unet3d/start_training.sh
+
+# Run the startup script in privileged mode
+#CMD ["/workspace/unet3d/start_training.sh"]

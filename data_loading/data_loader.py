@@ -1,13 +1,21 @@
 import os
-import glob
+import argparse
 
+import glob
+import logging
 import numpy as np
 import torch
+import nibabel
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
-
+import queue 
 from data_loading.pytorch_loader import PytVal, PytTrain
-from runtime.logging import mllog_event
+from runtime.logging import mllog_event , mllog_end , mllog_start
+import torch.multiprocessing as mp
+import threading
+import time
+import queue
+
 
 
 def list_files_with_pattern(path, files_pattern):
@@ -34,6 +42,9 @@ def split_eval_data(x_val, y_val, num_shards, shard_id):
     return x[shard_id], y[shard_id]
 
 
+
+
+
 def get_data_split(path: str, num_shards: int, shard_id: int):
     with open("evaluation_cases.txt", "r") as f:
         val_cases_list = f.readlines()
@@ -51,6 +62,10 @@ def get_data_split(path: str, num_shards: int, shard_id: int):
             lbls_train.append(case_lbl)
     mllog_event(key='train_samples', value=len(imgs_train), sync=False)
     mllog_event(key='eval_samples', value=len(imgs_val), sync=False)
+    imgs_train_split = [a.tolist() for a in np.array_split(imgs_train, num_shards)]
+    lbls_train_split = [a.tolist() for a in np.array_split(lbls_train, num_shards)]
+    imgs_train = imgs_train_split[shard_id]
+    lbls_train = lbls_train_split[shard_id]
     imgs_val, lbls_val = split_eval_data(imgs_val, lbls_val, num_shards, shard_id)
     return imgs_train, imgs_val, lbls_train, lbls_val
 
@@ -76,35 +91,61 @@ class SyntheticDataset(Dataset):
         return self.x[idx % 32], self.y[idx % 32]
 
 
-def get_data_loaders(flags, num_shards, global_rank):
+
+
+
+
+def get_data_loaders(flags, num_shards, global_rank,output_queue):
+   
+    
+    mllog_event(key='Num of workers', value=flags.num_workers, sync = False)
     if flags.loader == "synthetic":
         train_dataset = SyntheticDataset(scalar=True, shape=flags.input_shape, layout=flags.layout)
         val_dataset = SyntheticDataset(scalar=True, shape=flags.val_input_shape, layout=flags.layout)
 
+
     elif flags.loader == "pytorch":
         x_train, x_val, y_train, y_val = get_data_split(flags.data_dir, num_shards, shard_id=global_rank)
-        train_data_kwargs = {"patch_size": flags.input_shape, "oversampling": flags.oversampling, "seed": flags.seed}
-        train_dataset = PytTrain(x_train, y_train, **train_data_kwargs)
-        val_dataset = PytVal(x_val, y_val)
+      
+
+
+        
+        train_data_kwargs = {"patch_size": flags.input_shape, "oversampling": flags.oversampling, "seed": flags.seed , "raw-dir": flags.raw_dir, "image_spacings":flags.image_spacings}
+
+       
+
+        train_dataset = PytTrain(x_train, y_train,output_queue, **train_data_kwargs)
+
+
+        # Similarly, log the validation data loading
+        val_dataset = PytVal(x_val, y_val,flags.image_spacings)
     else:
         raise ValueError(f"Loader {flags.loader} unknown. Valid loaders are: synthetic, pytorch")
-
-    train_sampler = DistributedSampler(train_dataset, seed=flags.seed, drop_last=True) if num_shards > 1 else None
+    
+    train_sampler = DistributedSampler(x_train, seed=flags.seed, drop_last=True) if num_shards > 1 else None
     val_sampler = None
 
     train_dataloader = DataLoader(train_dataset,
-                                  batch_size=flags.batch_size,
-                                  shuffle=not flags.benchmark and train_sampler is None,
-                                  sampler=train_sampler,
-                                  num_workers=flags.num_workers,
-                                  pin_memory=True,
-                                  drop_last=True)
-    val_dataloader = DataLoader(val_dataset,
-                                batch_size=1,
-                                shuffle=not flags.benchmark and val_sampler is None,
-                                sampler=val_sampler,
-                                num_workers=flags.num_workers,
-                                pin_memory=True,
-                                drop_last=False)
+                                    batch_size=flags.batch_size,
+                                    shuffle=not flags.benchmark and train_sampler is None,
+                                    sampler=train_sampler,
+                                    num_workers=flags.num_workers,
+                                    pin_memory=True,
+                                    drop_last=True
+                                    )
 
+    val_dataloader = DataLoader(val_dataset,
+                                    batch_size=1,
+                                    shuffle= False,
+                                    sampler=val_sampler,
+                                    num_workers=1,
+                                    pin_memory=True,
+                                    drop_last=False
+                                    )
+
+
+   
     return train_dataloader, val_dataloader
+
+
+

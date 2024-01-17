@@ -13,6 +13,8 @@ mllogger = mllog.get_mllogger()
 
 
 def get_dllogger(params):
+    
+
     backends = []
     if is_main_process():
         backends += [StdOutBackend(Verbosity.VERBOSE)]
@@ -20,6 +22,7 @@ def get_dllogger(params):
             backends += [JSONStreamBackend(Verbosity.VERBOSE, os.path.join(params.log_dir, "log.json"))]
     logger.init(backends=backends)
     return logger
+
 
 
 def get_mlperf_logger(path, filename='mlperf.log'):
@@ -93,6 +96,7 @@ def mlperf_run_param_log(flags):
     mllog_event(key="training_input_shape", value=flags.input_shape)
     mllog_event(key="validation_input_shape", value=flags.val_input_shape)
     mllog_event(key="validation_overlap", value=flags.overlap)
+    mllog_event(key='Loader',value=flags.loader)
 
 
 def log_env_info():

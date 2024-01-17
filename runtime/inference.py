@@ -7,11 +7,16 @@ import torch.nn.functional as F
 from torch.cuda.amp import autocast
 
 from runtime.distributed_utils import reduce_tensor, get_world_size, get_rank
+from torch.utils.data import Dataset, DataLoader
+
+from data_loading.pytorch_loader import PytVal, PytTrain
 from runtime.logging import mllog_event
 
 
 def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distributed=False):
+    
     rank = get_rank()
+    torch.cuda.empty_cache()
     world_size = get_world_size()
     model.to(device)
     if flags.load_ckpt_path:
@@ -28,6 +33,12 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
 
     eval_loss = []
     scores = []
+    torch.cuda.empty_cache()
+
+    # Pre-allocate tensors for GPU to reduce memory fragmentation
+    buffer_image = torch.empty(0, device=device)
+    buffer_label = torch.empty(0, device=device)
+
     with torch.no_grad():
         for _, batch in enumerate(tqdm(loader, disable=(rank != 0) or not flags.verbose)):
             image, label = batch
@@ -35,10 +46,15 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
             image, label = image.to(device), label.to(device)
             if image.numel() == 0:
                 continue
+
+            # Ensure tensors are correctly allocated and have the same shape
+            buffer_image.resize_(image.shape).copy_(image)
+            buffer_label.resize_(label.shape).copy_(label)
+
             with autocast(enabled=flags.amp):
                 output, label = sliding_window_inference(
-                    inputs=image,
-                    labels=label,
+                    inputs=buffer_image,
+                    labels=buffer_label,
                     roi_shape=flags.val_input_shape,
                     model=model,
                     overlap=flags.overlap,
@@ -47,14 +63,18 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
                 )
                 eval_loss_value = loss_fn(output, label)
                 scores.append(score_fn(output, label))
+            
             eval_loss.append(eval_loss_value)
-            del output
-            del label
+            
+            # Clear GPU memory for intermediate tensors
+            del output, label
+
+    # Clear the remaining buffer tensors
+    del buffer_image, buffer_label
+    torch.cuda.empty_cache()
 
     scores = reduce_tensor(torch.mean(torch.stack(scores, dim=0), dim=0), world_size)
     eval_loss = reduce_tensor(torch.mean(torch.stack(eval_loss, dim=0), dim=0), world_size)
-    # scores = torch.mean(torch.stack(scores, dim=0), dim=0)
-    # eval_loss = torch.mean(torch.stack(eval_loss, dim=0), dim=0)
 
     scores, eval_loss = scores.cpu().numpy(), float(eval_loss.cpu().numpy())
     eval_metrics = {"epoch": epoch,
@@ -64,6 +84,7 @@ def evaluate(flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distri
                     "eval_loss": eval_loss}
 
     return eval_metrics
+
 
 
 def pad_input(volume, roi_shape, strides, padding_mode, padding_val, dim=3):
@@ -121,6 +142,7 @@ def sliding_window_inference(inputs, labels, roi_shape, model, overlap=0.5, mode
     if mode == "constant":
         norm_patch = torch.ones(size=roi_shape, dtype=norm_map.dtype, device=norm_map.device)
     elif mode == "gaussian":
+
         norm_patch = gaussian_kernel(roi_shape[0], 0.125*roi_shape[0]).type(norm_map.dtype).to(norm_map.device)
 
     else:
